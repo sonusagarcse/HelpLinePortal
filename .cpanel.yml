@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/ouvcxwtd/helpline.lkvmbihar.in/
+    - /bin/cp -R * $DEPLOYPATH
