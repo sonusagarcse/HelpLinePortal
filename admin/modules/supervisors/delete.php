@@ -1,0 +1,38 @@
+<?php
+require_once(dirname(dirname(__DIR__)) . '/config/config.php');
+require_once(dirname(dirname(__DIR__)) . '/config/auth.php');
+
+// Get supervisor ID
+if (!isset($_GET['id']) || empty($_GET['id'])) {
+    header('Location: list.php');
+    exit;
+}
+
+$supervisor_id = (int) $_GET['id'];
+
+// Check if supervisor has callers
+$check_query = "SELECT COUNT(*) as count FROM caller WHERE svid = ?";
+$check_stmt = mysqli_prepare($con, $check_query);
+mysqli_stmt_bind_param($check_stmt, "i", $supervisor_id);
+mysqli_stmt_execute($check_stmt);
+$check_result = mysqli_stmt_get_result($check_stmt);
+$check_row = mysqli_fetch_assoc($check_result);
+
+if ($check_row['count'] > 0) {
+    header('Location: list.php?error=has_callers');
+    exit;
+}
+
+// Delete supervisor
+$delete_query = "DELETE FROM supervisor WHERE id = ?";
+$delete_stmt = mysqli_prepare($con, $delete_query);
+mysqli_stmt_bind_param($delete_stmt, "i", $supervisor_id);
+
+if (mysqli_stmt_execute($delete_stmt)) {
+    logActivity('delete_supervisor', 'supervisor', $supervisor_id, null, null);
+    header('Location: list.php?success=deleted');
+} else {
+    header('Location: list.php?error=delete_failed');
+}
+exit;
+?>

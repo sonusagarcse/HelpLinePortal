@@ -1,0 +1,107 @@
+@font-face {
+    font-family: "flaticon_kleaso";
+    src: url("../fonts/flaticon_kleaso.ttf") format("truetype"),
+url("../fonts/flaticon_kleaso.woff") format("woff"),
+url("../fonts/flaticon_kleaso.woff2") format("woff2"),
+url("../fonts/flaticon_kleaso.eot") format("embedded-opentype"),
+url("./flaticon_kleaso.svg?086aca0ce3dc23512bfadf6bf72045a1#flaticon_kleaso") format("svg");
+}
+
+i[class^="flaticon-"]:before, i[class*=" flaticon-"]:before {
+    font-family: flaticon_kleaso !important;
+    font-style: normal;
+    font-weight: normal !important;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+.flaticon-home:before { content: "\f15a"; }
+
+.flaticon-user:before { content: "\f157"; }
+
+.flaticon-shopping-cart:before {
+    content: "\f101";
+}
+.flaticon-calendar:before {
+    content: "\f102";
+}
+.flaticon-telephone-call:before {
+    content: "\f103";
+}
+.flaticon-open-message:before {
+    content: "\f104";
+}
+.flaticon-mail:before {
+    content: "\f105";
+}
+.flaticon-location-pin:before {
+    content: "\f106";
+}
+.flaticon-location-pin-1:before {
+    content: "\f107";
+}
+.flaticon-location:before {
+    content: "\f108";
+}
+.flaticon-place:before {
+    content: "\f109";
+}
+.flaticon-send:before {
+    content: "\f10a";
+}
+.flaticon-medal:before {
+    content: "\f10b";
+}
+.flaticon-cpu:before {
+    content: "\f10c";
+}
+.flaticon-house-cleaning:before {
+    content: "\f10d";
+}
+.flaticon-workplace:before {
+    content: "\f10e";
+}
+.flaticon-window-cleaning:before {
+    content: "\f10f";
+}
+.flaticon-mop:before {
+    content: "\f110";
+}
+.flaticon-house:before {
+    content: "\f111";
+}
+.flaticon-pipes:before {
+    content: "\f112";
+}
+.flaticon-clean:before {
+    content: "\f113";
+}
+.flaticon-cleaning-lady:before {
+    content: "\f114";
+}
+.flaticon-thumbs-up:before {
+    content: "\f115";
+}
+.flaticon-car-service:before {
+    content: "\f116";
+}
+.flaticon-cleaning-tools:before {
+    content: "\f117";
+}
+.flaticon-kitchen:before {
+    content: "\f118";
+}
+.flaticon-pipe:before {
+    content: "\f119";
+}
+.flaticon-toilet:before {
+    content: "\f11a";
+}
+.flaticon-sanitary:before {
+    content: "\f11b";
+}
+.flaticon-mail:before {
+    content: "\f11c";
+}
