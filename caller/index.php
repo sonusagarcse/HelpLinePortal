@@ -109,40 +109,70 @@ while ($row = mysqli_fetch_assoc($result)) {
 
         .stat-card {
             background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 15px;
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
         }
 
         .stat-card .icon {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 20px;
             color: white;
+            flex-shrink: 0;
         }
 
         .stat-card h3 {
-            font-size: 32px;
-            font-weight: bold;
-            margin: 10px 0 5px 0;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .stat-card p {
+            font-size: 0.85rem;
+            margin: 0;
         }
 
         .table-card {
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .followup-card {
             border-left: 5px solid #ffc107;
-            background: #fff3cd;
+            background: #fffbef;
+        }
+
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            .stat-card h3 {
+                font-size: 20px;
+            }
+            .navbar-brand {
+                font-size: 1.1rem;
+            }
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
         }
     </style>
 </head>

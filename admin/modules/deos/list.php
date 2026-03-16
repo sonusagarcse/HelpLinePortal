@@ -11,6 +11,14 @@ $query = "SELECT d.*, b.bname FROM deo d
 $result = mysqli_query($con, $query);
 $deos = [];
 while ($row = mysqli_fetch_assoc($result)) {
+    $deo_id = $row['id'];
+    $branches_query = "SELECT b.bname FROM deo_branches db JOIN branch b ON db.branch_id = b.id WHERE db.deo_id = $deo_id";
+    $branches_result = mysqli_query($con, $branches_query);
+    $assigned_branch_names = [];
+    while ($b_row = mysqli_fetch_assoc($branches_result)) {
+        $assigned_branch_names[] = $b_row['bname'];
+    }
+    $row['assigned_branches'] = $assigned_branch_names;
     $deos[] = $row;
 }
 
@@ -93,7 +101,17 @@ include('../../includes/header.php');
                                     <td><strong><?php echo htmlspecialchars($deo['name']); ?></strong></td>
                                     <td><?php echo htmlspecialchars($deo['mob']); ?></td>
                                     <td><?php echo htmlspecialchars($deo['email']); ?></td>
-                                    <td><?php echo htmlspecialchars($deo['bname'] ?? 'Not Assigned'); ?></td>
+                                    <td>
+                                        <?php 
+                                        if (empty($deo['assigned_branches'])) {
+                                            echo '<span class="text-muted">None</span>';
+                                        } elseif (count($deo['assigned_branches']) > 2) {
+                                            echo count($deo['assigned_branches']) . ' Branches';
+                                        } else {
+                                            echo htmlspecialchars(implode(', ', $deo['assigned_branches']));
+                                        }
+                                        ?>
+                                    </td>
                                     <td>
                                         <?php if ($deo['status'] == 1): ?>
                                             <span class="badge bg-success">Active</span>

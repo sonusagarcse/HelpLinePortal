@@ -4,19 +4,12 @@ require_once('config/auth.php');
 
 $page_title = 'Add Student';
 
-// Handle branch selection update
-if (isset($_POST['update_branch'])) {
-    $_SESSION['sticky_bid'] = (int)$_POST['sticky_bid'];
-    header('Location: add_student.php?branch_updated=1');
+// Branch selection logic
+if ($active_bid == 0) {
+    header('Location: manage_branch.php?error=no_active_branch');
     exit;
 }
-
-// Initial sticky branch
-if ($deo_bid > 0) {
-    $sticky_bid = $deo_bid;
-} else {
-    $sticky_bid = $_SESSION['sticky_bid'] ?? 0;
-}
+$sticky_bid = $active_bid;
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_student'])) {
@@ -78,35 +71,15 @@ include('includes/header.php');
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 
-                <?php if ($deo_bid == 0): ?>
-                <div class="card border-0 shadow-sm rounded-4 mb-4" style="border-left: 5px solid #198754 !important;">
-                    <div class="card-body p-4">
-                        <form method="POST">
-                            <label class="form-label fw-bold"><i class="fas fa-building text-success me-2"></i>Active Target Branch</label>
-                            <div class="input-group">
-                                <select name="sticky_bid" class="form-select form-select-lg border-0 bg-light">
-                                    <option value="0">General / No Branch</option>
-                                    <?php mysqli_data_seek($branches, 0); while($b = mysqli_fetch_assoc($branches)): ?>
-                                        <option value="<?php echo $b['id']; ?>" <?php echo $sticky_bid == $b['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($b['bname']); ?>
-                                        </option>
-                                    <?php endwhile; ?>
-                                </select>
-                                <button type="submit" name="update_branch" class="btn btn-success px-4 fw-bold">SET BRANCH</button>
-                            </div>
-                            <small class="text-muted mt-2 d-block"><i class="fas fa-info-circle me-1"></i> All subsequent student entries will be automatically linked to this selected branch.</small>
-                        </form>
+                <div class="alert bg-white rounded-4 border-0 mb-4 shadow-sm d-flex align-items-center p-4">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                        <i class="fas fa-building text-primary fa-lg"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Active Branch: <?php echo htmlspecialchars($active_bname); ?></h6>
+                        <span class="text-muted small">All data will be linked to this branch. <a href="manage_branch.php" class="text-decoration-none">Change</a></span>
                     </div>
                 </div>
-                <?php else: ?>
-                    <div class="alert alert-info rounded-4 border-0 mb-4 shadow-sm d-flex align-items-center p-4">
-                        <i class="fas fa-info-circle fa-2x me-3 text-info"></i> 
-                        <div>
-                            <h5 class="alert-heading mb-1 fw-bold">Branch Assigned</h5>
-                            <span class="mb-0">All entries will be automatically linked to your permanently assigned branch.</span>
-                        </div>
-                    </div>
-                <?php endif; ?>
 
                 <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                     <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
@@ -126,22 +99,22 @@ include('includes/header.php');
                         <form method="POST" class="needs-validation" novalidate>
                             <div class="row g-4 mb-4">
                                 <div class="col-md-12">
-                                    <label class="form-label fw-semibold text-secondary">Student Full Name <span class="text-danger">*</span></label>
-                                    <div class="input-group input-group-lg shadow-sm rounded-4 overflow-hidden border border-light">
-                                        <span class="input-group-text bg-light border-0 text-muted px-4"><i class="fas fa-user"></i></span>
-                                        <input type="text" name="name" class="form-control border-0 bg-light" placeholder="e.g. Rahul Kumar" required autofocus>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-12">
                                     <label class="form-label fw-semibold text-secondary">Mobile Number <span class="text-danger">*</span></label>
                                     <div class="input-group input-group-lg shadow-sm rounded-4 overflow-hidden border border-light">
                                         <span class="input-group-text bg-light border-0 text-muted px-4"><i class="fas fa-phone-alt"></i></span>
-                                        <input type="tel" name="mob" class="form-control border-0 bg-light" placeholder="10-digit mobile number" pattern="[0-9]{10}" required>
+                                        <input type="tel" name="mob" id="student_mobile" class="form-control border-0 bg-light" placeholder="10-digit mobile number" pattern="[0-9]{10}" required autofocus autocomplete="off">
                                     </div>
-                                    <div class="form-text mt-2 ms-2 text-muted"><i class="fas fa-shield-alt me-1"></i> Ensure the mobile number is active and correct.</div>
+                                    <div id="mobile_alert" class="mt-2" style="display: none;"></div>
                                 </div>
 
+                                <div class="col-md-12">
+                                    <label class="form-label fw-semibold text-secondary">Student Full Name <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-lg shadow-sm rounded-4 overflow-hidden border border-light">
+                                        <span class="input-group-text bg-light border-0 text-muted px-4"><i class="fas fa-user"></i></span>
+                                        <input type="text" name="name" id="student_name" class="form-control border-0 bg-light" placeholder="e.g. Rahul Kumar" required>
+                                    </div>
+                                </div>
+                                
                                 <div class="col-md-6 mt-3 mt-md-4">
                                     <label class="form-label fw-semibold text-secondary">Father's Name (Optional)</label>
                                     <div class="input-group shadow-sm rounded-4 overflow-hidden border border-light">
@@ -152,9 +125,10 @@ include('includes/header.php');
 
                                 <div class="col-md-6 mt-3 mt-md-4">
                                     <label class="form-label fw-semibold text-secondary">Village/Town (Optional)</label>
-                                    <div class="input-group shadow-sm rounded-4 overflow-hidden border border-light">
+                                    <div class="input-group shadow-sm rounded-4 overflow-hidden border border-light" style="position: relative;">
                                         <span class="input-group-text bg-light border-0 text-muted px-4"><i class="fas fa-home"></i></span>
-                                        <input type="text" name="village" class="form-control border-0 bg-light" placeholder="e.g. Rampur">
+                                        <input type="text" name="village" id="village_input" class="form-control border-0 bg-light" placeholder="e.g. Rampur" autocomplete="off">
+                                        <div id="village_suggestions" class="list-group shadow-sm" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; display: none; border-radius: 0 0 15px 15px; overflow: hidden;"></div>
                                     </div>
                                 </div>
 
@@ -186,3 +160,60 @@ include('includes/header.php');
 </div>
 
 <?php include('includes/footer.php'); ?>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Mobile Check
+    $('#student_mobile').on('keyup', function() {
+        let mobile = $(this).val();
+        if (mobile.length === 10) {
+            $.getJSON('ajax_handler.php?action=check_mobile&mobile=' + mobile, function(data) {
+                if (data.exists) {
+                    $('#mobile_alert').html(
+                        '<div class="alert alert-warning py-2 mb-0 d-flex align-items-center">' +
+                        '<i class="fas fa-exclamation-triangle me-2"></i>' +
+                        '<span>Already exists: <strong>' + data.student.name + '</strong> (' + data.student.regno + ')</span>' +
+                        '</div>'
+                    ).fadeIn();
+                } else {
+                    $('#mobile_alert').fadeOut();
+                }
+            });
+        } else {
+            $('#mobile_alert').fadeOut();
+        }
+    });
+
+    // Village Autocomplete
+    $('#village_input').on('keyup', function() {
+        let term = $(this).val();
+        if (term.length >= 2) {
+            $.getJSON('ajax_handler.php?action=suggest_village&term=' + term, function(data) {
+                if (data.length > 0) {
+                    let html = '';
+                    data.forEach(function(v) {
+                        html += '<button type="button" class="list-group-item list-group-item-action py-2 village-opt">' + v + '</button>';
+                    });
+                    $('#village_suggestions').html(html).show();
+                } else {
+                    $('#village_suggestions').hide();
+                }
+            });
+        } else {
+            $('#village_suggestions').hide();
+        }
+    });
+
+    $(document).on('click', '.village-opt', function() {
+        $('#village_input').val($(this).text());
+        $('#village_suggestions').hide();
+    });
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#village_input').length && !$(e.target).closest('#village_suggestions').length) {
+            $('#village_suggestions').hide();
+        }
+    });
+});
+</script>

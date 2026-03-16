@@ -26,27 +26,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = mysqli_real_escape_string($con, $_POST['name']);
     $email = mysqli_real_escape_string($con, $_POST['email']);
     $mob = mysqli_real_escape_string($con, $_POST['mob']);
-    $bid = mysqli_real_escape_string($con, $_POST['bid']);
+    $assigned_branches = isset($_POST['branches']) ? $_POST['branches'] : [];
     $status = isset($_POST['status']) ? 1 : 0;
+    
+    mysqli_begin_transaction($con);
+    try {
+        if (!empty($_POST['pass'])) {
+            $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
+            $query = "UPDATE deo SET name=?, email=?, mob=?, status=?, pass=? WHERE id=?";
+            $stmt = mysqli_prepare($con, $query);
+            mysqli_stmt_bind_param($stmt, "sssssi", $name, $email, $mob, $status, $pass, $id);
+        } else {
+            $query = "UPDATE deo SET name=?, email=?, mob=?, status=? WHERE id=?";
+            $stmt = mysqli_prepare($con, $query);
+            mysqli_stmt_bind_param($stmt, "ssssi", $name, $email, $mob, $status, $id);
+        }
+        mysqli_stmt_execute($stmt);
 
-    if (!empty($_POST['pass'])) {
-        $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
-        $query = "UPDATE deo SET name=?, email=?, mob=?, bid=?, status=?, pass=? WHERE id=?";
-        $stmt = mysqli_prepare($con, $query);
-        mysqli_stmt_bind_param($stmt, "ssssisi", $name, $email, $mob, $bid, $status, $pass, $id);
-    } else {
-        $query = "UPDATE deo SET name=?, email=?, mob=?, bid=?, status=? WHERE id=?";
-        $stmt = mysqli_prepare($con, $query);
-        mysqli_stmt_bind_param($stmt, "ssssii", $name, $email, $mob, $bid, $status, $id);
-    }
+        // Sync branches
+        $delete_query = "DELETE FROM deo_branches WHERE deo_id = ?";
+        $delete_stmt = mysqli_prepare($con, $delete_query);
+        mysqli_stmt_bind_param($delete_stmt, "i", $id);
+        mysqli_stmt_execute($delete_stmt);
 
-    if (mysqli_stmt_execute($stmt)) {
+        if (!empty($assigned_branches)) {
+            $insert_query = "INSERT INTO deo_branches (deo_id, branch_id) VALUES (?, ?)";
+            $insert_stmt = mysqli_prepare($con, $insert_query);
+            foreach ($assigned_branches as $branch_id) {
+                mysqli_stmt_bind_param($insert_stmt, "ii", $id, $branch_id);
+                mysqli_stmt_execute($insert_stmt);
+            }
+        }
+
+        mysqli_commit($con);
         logActivity('edit_deo', 'deo', $id, json_encode($deo), json_encode($_POST));
         header('Location: list.php?success=updated');
         exit;
-    } else {
-        $error = 'Failed to update DEO: ' . mysqli_error($con);
+    } catch (Exception $e) {
+        mysqli_rollback($con);
+        $error = 'Failed to update DEO: ' . $e->getMessage();
     }
+}
+
+// Get currently assigned branches
+$assigned_result = mysqli_query($con, "SELECT branch_id FROM deo_branches WHERE deo_id = $id");
+$assigned_branches = [];
+while ($row = mysqli_fetch_assoc($assigned_result)) {
+    $assigned_branches[] = $row['branch_id'];
 }
 
 $branches = mysqli_query($con, "SELECT id, bname FROM branch WHERE status = 1 ORDER BY bname");
@@ -92,16 +118,20 @@ include('../../includes/header.php');
                             <label class="form-label">Mobile Number *</label>
                             <input type="text" name="mob" class="form-control" value="<?php echo htmlspecialchars($deo['mob']); ?>" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Branch Assignment</label>
-                            <select name="bid" class="form-select">
-                                <option value="0">All Branches</option>
-                                <?php while($b = mysqli_fetch_assoc($branches)): ?>
-                                    <option value="<?php echo $b['id']; ?>" <?php echo $deo['bid'] == $b['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($b['bname']); ?>
-                                    </option>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label d-block fw-bold">Branch Assignments (Select multiple)</label>
+                            <div class="row bg-light p-3 rounded border mx-0" style="max-height: 200px; overflow-y: auto;">
+                                <?php mysqli_data_seek($branches, 0); while($b = mysqli_fetch_assoc($branches)): ?>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="branches[]" value="<?php echo $b['id']; ?>" id="branch_<?php echo $b['id']; ?>" <?php echo in_array($b['id'], $assigned_branches) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="branch_<?php echo $b['id']; ?>">
+                                                <?php echo htmlspecialchars($b['bname']); ?>
+                                            </label>
+                                        </div>
+                                    </div>
                                 <?php endwhile; ?>
-                            </select>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Password (leave blank to keep current)</label>

@@ -62,6 +62,20 @@
             text-decoration: none;
             transition: all 0.2s;
             border-left: 4px solid transparent;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #sidebar ul li a i {
+            flex-shrink: 0;
+        }
+
+        #sidebar ul li a .badge {
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         #sidebar ul li a:hover, #sidebar ul li.active > a {

@@ -10,7 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = mysqli_real_escape_string($con, $_POST['name']);
     $email = mysqli_real_escape_string($con, $_POST['email']);
     $mob = mysqli_real_escape_string($con, $_POST['mob']);
-    $bid = mysqli_real_escape_string($con, $_POST['bid']);
+    $bid = 0; // Keeping for compatibility if needed, but primary logic moves to deo_branches
+    $assigned_branches = isset($_POST['branches']) ? $_POST['branches'] : [];
     $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
     $status = isset($_POST['status']) ? 1 : 0;
     $date = date('d-m-Y');
@@ -25,16 +26,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (mysqli_num_rows($check_result) > 0) {
         $error = 'Registration number or Email already exists!';
     } else {
-        $query = "INSERT INTO deo (name, email, mob, pass, regno, bid, status, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = mysqli_prepare($con, $query);
-        mysqli_stmt_bind_param($stmt, "sssssiis", $name, $email, $mob, $pass, $regno, $bid, $status, $date);
+        mysqli_begin_transaction($con);
+        try {
+            $query = "INSERT INTO deo (name, email, mob, pass, regno, bid, status, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmt = mysqli_prepare($con, $query);
+            mysqli_stmt_bind_param($stmt, "sssssiis", $name, $email, $mob, $pass, $regno, $bid, $status, $date);
+            mysqli_stmt_execute($stmt);
+            $new_deo_id = mysqli_insert_id($con);
 
-        if (mysqli_stmt_execute($stmt)) {
-            logActivity('create_deo', 'deo', mysqli_insert_id($con), null, json_encode($_POST));
+            // Insert multiple branches
+            if (!empty($assigned_branches)) {
+                $branch_query = "INSERT INTO deo_branches (deo_id, branch_id) VALUES (?, ?)";
+                $branch_stmt = mysqli_prepare($con, $branch_query);
+                foreach ($assigned_branches as $branch_id) {
+                    mysqli_stmt_bind_param($branch_stmt, "ii", $new_deo_id, $branch_id);
+                    mysqli_stmt_execute($branch_stmt);
+                }
+            }
+
+            mysqli_commit($con);
+            logActivity('create_deo', 'deo', $new_deo_id, null, json_encode($_POST));
             header('Location: list.php?success=added');
             exit;
-        } else {
-            $error = 'Failed to add DEO: ' . mysqli_error($con);
+        } catch (Exception $e) {
+            mysqli_rollback($con);
+            $error = 'Failed to add DEO: ' . $e->getMessage();
         }
     }
 }
@@ -105,14 +121,21 @@ include('../../includes/header.php');
                             <label class="form-label">Mobile Number *</label>
                             <input type="text" name="mob" class="form-control" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Branch Assignment</label>
-                            <select name="bid" class="form-select">
-                                <option value="0">All Branches</option>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label d-block fw-bold">Branch Assignments (Select multiple)</label>
+                            <div class="row bg-light p-3 rounded border mx-0" style="max-height: 200px; overflow-y: auto;">
                                 <?php while($b = mysqli_fetch_assoc($branches)): ?>
-                                    <option value="<?php echo $b['id']; ?>"><?php echo htmlspecialchars($b['bname']); ?></option>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="branches[]" value="<?php echo $b['id']; ?>" id="branch_<?php echo $b['id']; ?>">
+                                            <label class="form-check-label" for="branch_<?php echo $b['id']; ?>">
+                                                <?php echo htmlspecialchars($b['bname']); ?>
+                                            </label>
+                                        </div>
+                                    </div>
                                 <?php endwhile; ?>
-                            </select>
+                            </div>
+                            <small class="text-muted">DEO will be able to switch between these assigned branches.</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Password *</label>

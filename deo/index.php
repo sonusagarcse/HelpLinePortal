@@ -10,30 +10,31 @@ $yesterday = date('d-m-Y', strtotime("-1 day"));
 $current_month = date('-m-Y');
 
 // Stats filtering by DEO ID
-function get_count($con, $deo_id, $date_pattern) {
+// Stats filtering by DEO ID and Active Branch
+function get_count($con, $deo_id, $bid, $date_pattern) {
     if (strpos($date_pattern, '%') !== false) {
-        $query = "SELECT COUNT(*) as count FROM registration WHERE callerid = ? AND date LIKE ?";
+        $query = "SELECT COUNT(*) as count FROM registration WHERE callerid = ? AND bid = ? AND date LIKE ?";
     } else {
-        $query = "SELECT COUNT(*) as count FROM registration WHERE callerid = ? AND date = ?";
+        $query = "SELECT COUNT(*) as count FROM registration WHERE callerid = ? AND bid = ? AND date = ?";
     }
     $stmt = mysqli_prepare($con, $query);
-    mysqli_stmt_bind_param($stmt, "is", $deo_id, $date_pattern);
+    mysqli_stmt_bind_param($stmt, "iis", $deo_id, $bid, $date_pattern);
     mysqli_stmt_execute($stmt);
     return mysqli_stmt_get_result($stmt)->fetch_assoc()['count'];
 }
 
-$stats['today'] = get_count($con, $deo_id, $today);
-$stats['yesterday'] = get_count($con, $deo_id, $yesterday);
-$stats['monthly'] = get_count($con, $deo_id, "%" . $current_month);
+$stats['today'] = get_count($con, $deo_id, $active_bid, $today);
+$stats['yesterday'] = get_count($con, $deo_id, $active_bid, $yesterday);
+$stats['monthly'] = get_count($con, $deo_id, $active_bid, "%" . $current_month);
 
 // Recent entries
 $recent_entries = [];
 $query = "SELECT r.*, b.bname FROM registration r 
           LEFT JOIN branch b ON r.bid = b.id 
-          WHERE r.callerid = ? 
+          WHERE r.callerid = ? AND r.bid = ? 
           ORDER BY r.id DESC LIMIT 10";
 $stmt = mysqli_prepare($con, $query);
-mysqli_stmt_bind_param($stmt, "i", $deo_id);
+mysqli_stmt_bind_param($stmt, "ii", $deo_id, $active_bid);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 while ($row = mysqli_fetch_assoc($result)) {

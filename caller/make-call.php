@@ -11,7 +11,7 @@ if (!isset($_SESSION['caller_id'])) {
 require_once(__DIR__ . '/../connection.php');
 
 // Get student ID (could come as id or student_id depending on link origin)
-$student_id = isset($_GET['id']) ? (int) $_GET['id'] : (isset($_GET['student_id']) ? (int) $_GET['student_id'] : 0);
+$student_id = isset($_GET['id']) ? (int)$_GET['id'] : (isset($_GET['student_id']) ? (int)$_GET['student_id'] : 0);
 $caller_id = $_SESSION['caller_id'];
 
 // Handle Student Details Update
@@ -35,16 +35,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     address = ?, village = ?, dis = ?, state = ?, pincode = ? 
                    WHERE id = ?";
     $update_stmt = mysqli_prepare($con, $update_sql);
-    mysqli_stmt_bind_param($update_stmt, "ssssssssssssi", 
-        $name, $father, $mob, $othermob, 
-        $dob, $gender, $qualification, 
-        $address, $village, $dis, $state, $pincode, 
+    mysqli_stmt_bind_param($update_stmt, "ssssssssssssi",
+        $name, $father, $mob, $othermob,
+        $dob, $gender, $qualification,
+        $address, $village, $dis, $state, $pincode,
         $student_id
     );
 
     if (mysqli_stmt_execute($update_stmt)) {
         $_SESSION['success_msg'] = "Student details updated successfully!";
-    } else {
+    }
+    else {
         $_SESSION['error_msg'] = "Error updating details: " . mysqli_error($con);
     }
     header("Location: make-call.php?id=$student_id");
@@ -77,7 +78,8 @@ $prev_result = mysqli_stmt_get_result($prev_stmt);
 $prev_call = mysqli_fetch_assoc($prev_result);
 
 $data['nextdate'] = $prev_call['nextdate'] ?? 'None yet';
-$data['pdate'] = (isset($prev_call['pdate']) && $prev_call['pdate'] != '') ? $prev_call['pdate'] : date('Y-m-d'); 
+$data['pdate'] = (isset($prev_call['pdate']) && $prev_call['pdate'] != '') ? $prev_call['pdate'] : date('Y-m-d');
+
 $data['des'] = $prev_call['des'] ?? '';
 $data['remarks'] = $student['caller_remark'];
 
@@ -122,7 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $update_stmt = mysqli_prepare($con, $update_query);
         if ($is_rejected) {
             mysqli_stmt_bind_param($update_stmt, "si", $remarks, $student_id);
-        } else {
+        }
+        else {
             mysqli_stmt_bind_param($update_stmt, "si", $remarks, $student_id);
         }
         mysqli_stmt_execute($update_stmt);
@@ -152,28 +155,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .form-card {
             background: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .student-details-card {
-            background: #e9ecef;
+            background: #f1f3f5;
             border-left: 5px solid #28a745;
             padding: 20px;
             margin-bottom: 25px;
-            border-radius: 5px;
+            border-radius: 12px;
         }
 
         .detail-item {
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         .detail-label {
-            font-weight: bold;
-            color: #495057;
-            width: 140px;
-            display: inline-block;
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .form-card {
+                padding: 15px;
+            }
+            .btn-lg {
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
@@ -203,17 +219,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <?php if (isset($_SESSION['success_msg'])): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="fas fa-check-circle me-2"></i><?php echo $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?>
+                    <i class="fas fa-check-circle me-2"></i><?php echo $_SESSION['success_msg'];
+    unset($_SESSION['success_msg']); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-            <?php endif; ?>
+            <?php
+endif; ?>
 
             <?php if (isset($_SESSION['error_msg'])): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-triangle me-2"></i><?php echo $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?>
+                    <i class="fas fa-exclamation-triangle me-2"></i><?php echo $_SESSION['error_msg'];
+    unset($_SESSION['error_msg']); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-            <?php endif; ?>
+            <?php
+endif; ?>
 
             <?php if ($student): ?>
                 <div class="student-details-card">
@@ -222,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="col-md-6">
                             <div class="detail-item">
                                 <span class="detail-label">Full Name:</span>
-                                <?php echo htmlspecialchars($student['name']); ?>
+                                <b class="fs-4 text-dark"><?php echo htmlspecialchars($student['name']); ?></b>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Father's Name:</span>
@@ -230,15 +250,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Mobile Number:</span>
-                                <strong><a href="tel:<?php echo htmlspecialchars($student['mob']); ?>"
-                                        class="text-decoration-none"><?php echo htmlspecialchars($student['mob']); ?></a></strong>
+                                <div>
+                                    <strong class="fs-4 text-dark"><?php echo htmlspecialchars($student['mob']); ?></strong>
+                                    <div class="mt-3">
+                                        <a href="tel:<?php echo htmlspecialchars($student['mob']); ?>"
+                                            class="btn btn-success btn-lg w-100 py-3 rounded-pill shadow d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-phone-alt fa-shake me-3 fa-lg"></i>
+                                            <span class="fw-bold">START CALL NOW</span>
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                             <?php if (!empty($student['othermob_no'])): ?>
                                 <div class="detail-item">
                                     <span class="detail-label">Other Mobile:</span>
                                     <?php echo htmlspecialchars($student['othermob_no']); ?>
                                 </div>
-                            <?php endif; ?>
+                            <?php
+    endif; ?>
                         </div>
                         <div class="col-md-6">
                             <div class="detail-item">
@@ -265,20 +294,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="detail-item">
                                 <span class="detail-label">Address:</span>
                                 <?php
-                                $addr_parts = array_filter([
-                                    $student['address'],
-                                    $student['village'],
-                                    $student['dis'],
-                                    $student['state'],
-                                    $student['pincode']
-                                ]);
-                                echo htmlspecialchars(implode(', ', $addr_parts));
-                                ?>
+    $addr_parts = array_filter([
+        $student['address'],
+        $student['village'],
+        $student['dis'],
+        $student['state'],
+        $student['pincode']
+    ]);
+    echo htmlspecialchars(implode(', ', $addr_parts));
+?>
                             </div>
                         </div>
                     </div>
                 </div>
-            <?php endif; ?>
+            <?php
+endif; ?>
 
             <div class="alert alert-info">
                 <strong>Category:</strong> <?php echo htmlspecialchars($data['category_name'] ?? 'N/A'); ?><br>
@@ -302,7 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mb-3">
                     <label class="form-label">Next Follow-up Date *</label>
                     <input type="date" name="next_date" class="form-control" required 
-                        value="<?php echo (isset($data['nextdate']) && $data['nextdate'] != 'None yet') ? htmlspecialchars($data['nextdate']) : ''; ?>">
+                        value="<?php echo(isset($data['nextdate']) && $data['nextdate'] != 'None yet') ? htmlspecialchars($data['nextdate']) : ''; ?>">
                 </div>
 
                 <div class="mb-3">
@@ -369,15 +399,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </thead>
                         <tbody>
                             <?php
-                            $history_query = "SELECT * FROM mquery WHERE studentid = ? ORDER BY id DESC";
-                            $h_stmt = mysqli_prepare($con, $history_query);
-                            mysqli_stmt_bind_param($h_stmt, "i", $student_id);
-                            mysqli_stmt_execute($h_stmt);
-                            $h_result = mysqli_stmt_get_result($h_stmt);
-                            $history_found = false;
-                            while ($h = mysqli_fetch_assoc($h_result)) {
-                                $history_found = true;
-                                ?>
+$history_query = "SELECT * FROM mquery WHERE studentid = ? ORDER BY id DESC";
+$h_stmt = mysqli_prepare($con, $history_query);
+mysqli_stmt_bind_param($h_stmt, "i", $student_id);
+mysqli_stmt_execute($h_stmt);
+$h_result = mysqli_stmt_get_result($h_stmt);
+$history_found = false;
+while ($h = mysqli_fetch_assoc($h_result)) {
+    $history_found = true;
+?>
                                 <tr>
                                     <td><?php echo date('d-M-Y H:i', strtotime($h['date'])); ?></td>
                                     <td><?php echo htmlspecialchars($h['des']); ?></td>
@@ -386,17 +416,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <td>
                                         <?php if ($h['status'] == 0): ?>
                                             <span class="badge bg-success">Completed</span>
-                                        <?php else: ?>
+                                        <?php
+    else: ?>
                                             <span class="badge bg-warning">Follow-up</span>
-                                        <?php endif; ?>
+                                        <?php
+    endif; ?>
                                     </td>
                                 </tr>
                                 <?php
-                            }
-                            if (!$history_found) {
-                                echo '<tr><td colspan="5" class="text-center text-muted">No previous calls recorded.</td></tr>';
-                            }
-                            ?>
+}
+if (!$history_found) {
+    echo '<tr><td colspan="5" class="text-center text-muted">No previous calls recorded.</td></tr>';
+}
+?>
                         </tbody>
                     </table>
                 </div>
