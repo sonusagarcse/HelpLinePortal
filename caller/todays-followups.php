@@ -12,21 +12,28 @@ require_once(__DIR__ . '/../connection.php');
 $caller_id = $_SESSION['caller_id'];
 $caller_name = $_SESSION['caller_name'];
 
-// Get all students assigned to this caller who have a follow-up today
+$where_clause = "(
+    EXISTS (SELECT 1 FROM caller_branches cb WHERE cb.caller_id = $caller_id AND cb.status = 1 AND cb.branch_id = r.bid AND (cb.category_id = 0 OR cb.category_id = r.mcategory))
+    OR r.assigned_caller = $caller_id
+) AND r.status = 1";
+
+// Get latest query status for all relevant students
+$latest_mq_subquery = "SELECT studentid, status, nextdate, des
+                      FROM mquery 
+                      WHERE callerid = $caller_id 
+                      AND id IN (SELECT MAX(id) FROM mquery WHERE callerid = $caller_id GROUP BY studentid)";
+
 $query = "SELECT r.*, r.id as student_id, r.regno as student_regno, r.name as student_name, 
                  r.father as student_father, r.mob as student_mob, 
                  r.address as student_address, r.village as student_village, r.dis as student_dis, 
                  r.state as student_state, r.pincode as student_pincode, 
                  mc.name as category_name, b.bname, b.bcode,
-                 (SELECT nextdate FROM mquery mq WHERE mq.studentid = r.id AND mq.callerid = $caller_id ORDER BY id DESC LIMIT 1) as nextdate,
-                 (SELECT status FROM mquery mq WHERE mq.studentid = r.id AND mq.callerid = $caller_id ORDER BY id DESC LIMIT 1) as latest_status,
-                 (SELECT des FROM mquery mq WHERE mq.studentid = r.id AND mq.callerid = $caller_id ORDER BY id DESC LIMIT 1) as latest_remarks
+                 mq_latest.nextdate, mq_latest.status as latest_status, mq_latest.des as latest_remarks
           FROM registration r 
           LEFT JOIN member_category mc ON r.mcategory = mc.id 
           LEFT JOIN branch b ON r.bid = b.id
-          WHERE (r.bid IN (SELECT branch_id FROM caller_branches WHERE caller_id = $caller_id AND status = 1) 
-             OR r.bid = " . ($_SESSION['caller_bid'] ?? 0) . "
-             OR r.assigned_caller = $caller_id) AND r.status = 1
+          LEFT JOIN ($latest_mq_subquery) mq_latest ON r.id = mq_latest.studentid
+          WHERE $where_clause
           HAVING (latest_status IS NULL OR latest_status = 1) AND nextdate = CURDATE()
           ORDER BY nextdate ASC, r.id DESC";
 

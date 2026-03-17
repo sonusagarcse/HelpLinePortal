@@ -4,8 +4,11 @@ require_once(dirname(dirname(__DIR__)) . '/config/auth.php');
 
 $page_title = 'Member Categories';
 
-// Get all member categories
-$query = "SELECT * FROM member_category ORDER BY id DESC";
+// Get all member categories with branch names
+$query = "SELECT mc.*, b.bname as branch_name 
+          FROM member_category mc 
+          LEFT JOIN branch b ON mc.bid = b.id 
+          ORDER BY mc.id DESC";
 $result = mysqli_query($con, $query);
 $categories = [];
 while ($row = mysqli_fetch_assoc($result)) {
@@ -68,6 +71,7 @@ include('../../includes/header.php');
                             <tr>
                                 <th>ID</th>
                                 <th>Category Name</th>
+                                <th>Branch</th>
                                 <th>Description</th>
                                 <th>Date</th>
                                 <th>Status</th>
@@ -79,6 +83,13 @@ include('../../includes/header.php');
                                 <tr>
                                     <td><?php echo $category['id']; ?></td>
                                     <td><strong><?php echo htmlspecialchars(($category['name']) ?? ''); ?></strong></td>
+                                    <td>
+                                        <?php if ($category['bid'] == 0): ?>
+                                            <span class="badge bg-info">Global</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-light text-dark"><?php echo htmlspecialchars($category['branch_name']); ?></span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo htmlspecialchars(substr(strip_tags($category['des']), 0, 100)); ?>...
                                     </td>
                                     <td><?php echo htmlspecialchars(($category['date']) ?? ''); ?></td>

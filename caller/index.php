@@ -12,30 +12,35 @@ require_once(__DIR__ . '/../connection.php');
 $caller_id = $_SESSION['caller_id'];
 $caller_name = $_SESSION['caller_name'];
 
+$where_clause = "(
+    EXISTS (SELECT 1 FROM caller_branches cb WHERE cb.caller_id = $caller_id AND cb.status = 1 AND cb.branch_id = r.bid AND (cb.category_id = 0 OR cb.category_id = r.mcategory))
+    OR r.assigned_caller = $caller_id
+) AND r.status = 1";
+
+// 1. Total Assigned & Statistics (Optimized with a single pass or efficient subqueries)
+// Get latest query status for all relevant students in one go
+$latest_mq_subquery = "SELECT studentid, status, nextdate, des
+                      FROM mquery 
+                      WHERE callerid = $caller_id 
+                      AND id IN (SELECT MAX(id) FROM mquery WHERE callerid = $caller_id GROUP BY studentid)";
+
 $total_query = "SELECT COUNT(*) as total FROM registration r 
-                WHERE (r.bid IN (SELECT branch_id FROM caller_branches WHERE caller_id = $caller_id AND status = 1) 
-                   OR r.bid = " . ($_SESSION['caller_bid'] ?? 0) . "
-                   OR r.assigned_caller = $caller_id) AND r.status = 1 
-                AND ((SELECT status FROM mquery mq WHERE mq.studentid = r.id AND mq.callerid = $caller_id ORDER BY id DESC LIMIT 1) NOT IN (0, 2) 
-                     OR (SELECT status FROM mquery mq WHERE mq.studentid = r.id AND mq.callerid = $caller_id ORDER BY id DESC LIMIT 1) IS NULL)";
+                LEFT JOIN ($latest_mq_subquery) mq_latest ON r.id = mq_latest.studentid
+                WHERE $where_clause 
+                AND (mq_latest.status NOT IN (0, 2) OR mq_latest.status IS NULL)";
 $result = mysqli_query($con, $total_query);
 $stats['total_assigned'] = mysqli_fetch_assoc($result)['total'];
 
-// Completed calls (Total unique students called who are marked as completed)
+// Completed calls
 $result_unique = mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND status = 0");
 $stats['completed'] = mysqli_fetch_assoc($result_unique)['total'];
 
-// 3. Pending Data (Records actually due for a call / visible in list)
-$precise_pending_query = "SELECT COUNT(*) as total FROM (
-    SELECT r.id, 
-           (SELECT nextdate FROM mquery mq WHERE mq.studentid = r.id AND mq.callerid = $caller_id ORDER BY id DESC LIMIT 1) as nd,
-           (SELECT status FROM mquery mq WHERE mq.studentid = r.id AND mq.callerid = $caller_id ORDER BY id DESC LIMIT 1) as ls
-    FROM registration r
-    WHERE (r.bid IN (SELECT branch_id FROM caller_branches WHERE caller_id = $caller_id AND status = 1) 
-       OR r.bid = " . ($_SESSION['caller_bid'] ?? 0) . "
-       OR r.assigned_caller = $caller_id) AND r.status = 1
-    HAVING (ls IS NULL OR ls = 1) AND (nd IS NULL OR nd <= CURDATE())
-) as visible_data";
+// 3. Pending Data
+$precise_pending_query = "SELECT COUNT(*) as total FROM registration r
+                         LEFT JOIN ($latest_mq_subquery) mq_latest ON r.id = mq_latest.studentid
+                         WHERE $where_clause
+                         AND (mq_latest.status IS NULL OR mq_latest.status = 1) 
+                         AND (mq_latest.nextdate IS NULL OR mq_latest.nextdate <= CURDATE())";
 $result = mysqli_query($con, $precise_pending_query);
 $stats['pending'] = mysqli_fetch_assoc($result)['total'];
 
@@ -43,29 +48,26 @@ $stats['pending'] = mysqli_fetch_assoc($result)['total'];
 $result = mysqli_query($con, "SELECT COUNT(*) as total FROM mquery WHERE callerid = $caller_id AND DATE(date) = CURDATE()");
 $stats['today'] = mysqli_fetch_assoc($result)['total'];
 
-// Get assigned data
-// Joining with mquery to get the latest nextdate if it exists
-    $query = "SELECT r.*, r.id as student_id, r.regno as student_regno, r.name as student_name, 
+// Get assigned data (The main loop)
+$query = "SELECT r.*, r.id as student_id, r.regno as student_regno, r.name as student_name, 
                  r.father as student_father, r.mob as student_mob, r.email as student_email, 
                  r.address as student_address, r.village as student_village, r.dis as student_dis, 
                  r.state as student_state, r.pincode as student_pincode, 
                  mc.name as category_name, b.bname, b.bcode,
-                 (SELECT nextdate FROM mquery mq WHERE mq.studentid = r.id AND mq.callerid = $caller_id ORDER BY id DESC LIMIT 1) as nextdate,
-                 (SELECT status FROM mquery mq WHERE mq.studentid = r.id AND mq.callerid = $caller_id ORDER BY id DESC LIMIT 1) as latest_status
+                 mq_latest.nextdate, mq_latest.status as latest_status, mq_latest.des as latest_remarks
           FROM registration r 
           LEFT JOIN member_category mc ON r.mcategory = mc.id 
           LEFT JOIN branch b ON r.bid = b.id
-          WHERE (r.bid IN (SELECT branch_id FROM caller_branches WHERE caller_id = $caller_id AND status = 1) 
-             OR r.bid = " . ($_SESSION['caller_bid'] ?? 0) . "
-             OR r.assigned_caller = $caller_id) AND r.status = 1
+          LEFT JOIN ($latest_mq_subquery) mq_latest ON r.id = mq_latest.studentid
+          WHERE $where_clause
           HAVING (latest_status IS NULL OR latest_status = 1) AND (nextdate IS NULL OR nextdate <= CURDATE())
           ORDER BY (nextdate IS NOT NULL) DESC, nextdate ASC, r.id DESC";
 $assigned_data = [];
 $result = mysqli_query($con, $query);
 
 while ($row = mysqli_fetch_assoc($result)) {
-    // Standardize array structure for the unified view
-    $row['remarks'] = $row['caller_remark'];
+    // Standardize array structure
+    $row['remarks'] = $row['latest_remarks'] ?: $row['caller_remark'];
     $assigned_data[] = $row;
 }
 

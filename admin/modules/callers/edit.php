@@ -18,15 +18,15 @@ if (!$caller) {
     exit;
 }
 
-// Get assigned branches for calling
-$branch_query = "SELECT branch_id FROM caller_branches WHERE caller_id = ? AND status = 1";
+// Get assigned branches and categories for calling
+$branch_query = "SELECT branch_id, category_id FROM caller_branches WHERE caller_id = ? AND status = 1";
 $branch_stmt = mysqli_prepare($con, $branch_query);
 mysqli_stmt_bind_param($branch_stmt, "i", $id);
 mysqli_stmt_execute($branch_stmt);
 $branch_result = mysqli_stmt_get_result($branch_stmt);
-$assigned_branches = [];
+$assigned_assignments = [];
 while ($row = mysqli_fetch_assoc($branch_result)) {
-    $assigned_branches[] = $row['branch_id'];
+    $assigned_assignments[$row['branch_id']][] = $row['category_id'];
 }
 
 // Handle form submission
@@ -54,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bid = mysqli_real_escape_string($con, $_POST['bid']);
     $status = isset($_POST['status']) ? 1 : 0;
 
-    // Get selected branches for calling
-    $calling_branches = isset($_POST['calling_branches']) ? $_POST['calling_branches'] : [];
+    // Get selected branches and categories for calling
+    $calling_assignments = isset($_POST['calling_assignments']) ? $_POST['calling_assignments'] : [];
 
     // Update password only if provided
     if (!empty($_POST['pass'])) {
@@ -74,16 +74,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // First, deactivate all existing assignments
         mysqli_query($con, "UPDATE caller_branches SET status = 0 WHERE caller_id = $id");
 
-        // Then add/reactivate selected branches
-        if (!empty($calling_branches)) {
-            $branch_query = "INSERT INTO caller_branches (caller_id, branch_id, assigned_date, status) VALUES (?, ?, ?, 1) 
+        // Then add/reactivate selected assignments
+        if (!empty($calling_assignments)) {
+            $branch_query = "INSERT INTO caller_branches (caller_id, branch_id, category_id, assigned_date, status) VALUES (?, ?, ?, ?, 1) 
                             ON DUPLICATE KEY UPDATE status = 1, assigned_date = ?";
             $branch_stmt = mysqli_prepare($con, $branch_query);
             $assigned_date = date('Y-m-d');
 
-            foreach ($calling_branches as $branch_id) {
-                mysqli_stmt_bind_param($branch_stmt, "iiss", $id, $branch_id, $assigned_date, $assigned_date);
-                mysqli_stmt_execute($branch_stmt);
+            foreach ($calling_assignments as $assignment) {
+                // assignment format: branchID_categoryID
+                $parts = explode('_', $assignment);
+                if (count($parts) == 2) {
+                    $branch_id = (int)$parts[0];
+                    $category_id = (int)$parts[1];
+                    mysqli_stmt_bind_param($branch_stmt, "iiiss", $id, $branch_id, $category_id, $assigned_date, $assigned_date);
+                    mysqli_stmt_execute($branch_stmt);
+                }
             }
             mysqli_stmt_close($branch_stmt);
         }
@@ -110,8 +116,87 @@ while ($row = mysqli_fetch_assoc($result)) {
     $branches[] = $row;
 }
 
+// Get all categories grouped by branch
+$categories_by_branch = [];
+$cat_result = mysqli_query($con, "SELECT id, name, bid FROM member_category WHERE status = 1 ORDER BY name ASC");
+while ($row = mysqli_fetch_assoc($cat_result)) {
+    $categories_by_branch[$row['bid']][] = $row;
+}
+
+// Get ALL active assignments for OTHER callers to highlight
+$other_assignments = [];
+$other_query = "SELECT cb.branch_id, cb.category_id, c.name as caller_name 
+                FROM caller_branches cb 
+                JOIN caller c ON cb.caller_id = c.id 
+                WHERE cb.status = 1 AND cb.caller_id != $id";
+$other_result = mysqli_query($con, $other_query);
+while ($row = mysqli_fetch_assoc($other_result)) {
+    $other_assignments[$row['branch_id']][$row['category_id']][] = $row['caller_name'];
+}
+
 include('../../includes/header.php');
 ?>
+
+<style>
+    .assignment-section {
+        background: #fdfdfd;
+        border-radius: 15px;
+        padding: 20px;
+        border: 1px solid #eee;
+    }
+    .assignment-card {
+        border: 1px solid #eef0f5 !important;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    .assignment-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+    .branch-title {
+        color: #4361ee;
+        font-size: 0.95rem;
+        background: #f8faff;
+        margin: -1rem;
+        margin-bottom: 1rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f0f2f7;
+    }
+    .all-cat-wrapper {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+    }
+    .category-scroll {
+        max-height: 180px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+    .category-scroll::-webkit-scrollbar {
+        width: 4px;
+    }
+    .category-scroll::-webkit-scrollbar-thumb {
+        background: #ddd;
+        border-radius: 10px;
+    }
+    .other-assigned {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: #fff5f5;
+        border: 1px solid #ffe3e3;
+        display: inline-block;
+        margin-top: 2px;
+    }
+    .cat-item {
+        padding: 4px 0;
+        border-bottom: 1px dashed #f0f0f0;
+    }
+    .cat-item:last-child {
+        border-bottom: none;
+    }
+</style>
 
 <div class="wrapper">
     <?php include('../../includes/sidebar.php'); ?>
@@ -294,17 +379,98 @@ include('../../includes/header.php');
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Branches for Calling (Multi-select)</label>
-                            <select name="calling_branches[]" class="form-control" multiple size="5">
-                                <?php foreach ($branches as $branch): ?>
-                                    <option value="<?php echo $branch['id']; ?>" <?php echo in_array($branch['id'], $assigned_branches) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($branch['bcode'] . ' - ' . $branch['bname']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <small class="text-muted">Hold Ctrl/Cmd to select multiple branches</small>
+                        <div class="col-md-12">
+                            <div class="assignment-section mb-4">
+                                <h5 class="fw-bold mb-3 d-flex align-items-center">
+                                    <i class="fas fa-shield-alt text-primary me-2"></i>
+                                    Data Access Assignment (Branches & Categories)
+                                </h5>
+                                <p class="text-muted small mb-4">Select the branches and categories this caller is authorized to view and call.</p>
+                                
+                                <div class="assignment-grid">
+                                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                                        <?php foreach ($branches as $branch): ?>
+                                            <div class="col">
+                                                <div class="card h-100 assignment-card border-0 shadow-sm rounded-4">
+                                                    <div class="card-body p-4">
+                                                        <div class="branch-title fw-bold">
+                                                            <i class="fas fa-building me-2"></i><?php echo htmlspecialchars($branch['bname']); ?>
+                                                        </div>
+                                                        
+                                                        <div class="all-cat-wrapper">
+                                                            <div class="form-check">
+                                                                <?php 
+                                                                    $all_cat_checked = isset($assigned_assignments[$branch['id']]) && in_array(0, $assigned_assignments[$branch['id']]); 
+                                                                    $others_all = $other_assignments[$branch['id']][0] ?? [];
+                                                                ?>
+                                                                <input type="checkbox" name="calling_assignments[]" value="<?php echo $branch['id']; ?>_0" class="form-check-input" id="branch_<?php echo $branch['id']; ?>_all" <?php echo $all_cat_checked ? 'checked' : ''; ?> <?php echo !empty($others_all) ? 'disabled' : ''; ?>>
+                                                                <label class="form-check-label fw-bold" for="branch_<?php echo $branch['id']; ?>_all">All Categories</label>
+                                                                <?php if (!empty($others_all)): ?>
+                                                                    <div class="other-assigned text-danger d-block">
+                                                                        <i class="fas fa-user-check me-1"></i><?php echo htmlspecialchars(implode(', ', $others_all)); ?>
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="category-list-container">
+                                                            <div class="category-scroll">
+                                                                <?php if (isset($categories_by_branch[$branch['id']])): ?>
+                                                                    <?php foreach ($categories_by_branch[$branch['id']] as $cat): ?>
+                                                                        <div class="cat-item">
+                                                                            <div class="form-check">
+                                                                                <?php 
+                                                                                    $cat_checked = isset($assigned_assignments[$branch['id']]) && in_array($cat['id'], $assigned_assignments[$branch['id']]); 
+                                                                                    $others_cat = $other_assignments[$branch['id']][$cat['id']] ?? [];
+                                                                                    // Disable if this category is assigned to someone else OR if 'All Categories' is assigned to someone else
+                                                                                    $is_cat_disabled = !empty($others_cat) || !empty($others_all) || $all_cat_checked;
+                                                                                ?>
+                                                                                <input type="checkbox" name="calling_assignments[]" value="<?php echo $branch['id']; ?>_<?php echo $cat['id']; ?>" class="form-check-input branch-cat-<?php echo $branch['id']; ?>" id="cat_<?php echo $branch['id']; ?>_<?php echo $cat['id']; ?>" <?php echo $cat_checked ? 'checked' : ''; ?> <?php echo $is_cat_disabled ? 'disabled' : ''; ?> data-assigned="<?php echo (!empty($others_cat) || !empty($others_all)) ? 'true' : 'false'; ?>">
+                                                                                <label class="form-check-label" for="cat_<?php echo $branch['id']; ?>_<?php echo $cat['id']; ?>">
+                                                                                    <?php echo htmlspecialchars($cat['name']); ?>
+                                                                                 </label>
+                                                                                <?php if (!empty($others_cat)): ?>
+                                                                                    <div class="other-assigned text-danger d-block">
+                                                                                        <i class="fas fa-info-circle me-1"></i><?php echo htmlspecialchars(implode(', ', $others_cat)); ?>
+                                                                                    </div>
+                                                                                <?php endif; ?>
+                                                                            </div>
+                                                                        </div>
+                                                                    <?php endforeach; ?>
+                                                                <?php else: ?>
+                                                                    <small class="text-muted italic">No categories available.</small>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Toggle category checkboxes when "All Categories" is checked
+                            document.querySelectorAll('[id^="branch_"][id$="_all"]').forEach(function(allCheckbox) {
+                                allCheckbox.addEventListener('change', function() {
+                                    const branchId = this.id.split('_')[1];
+                                    const catCheckboxes = document.querySelectorAll('.branch-cat-' + branchId);
+                                    catCheckboxes.forEach(function(cb) {
+                                        if (this.checked) {
+                                            cb.disabled = true;
+                                            cb.checked = false;
+                                        } else {
+                                            // Only re-enable if NOT assigned to someone else
+                                            cb.disabled = cb.getAttribute('data-assigned') === 'true';
+                                        }
+                                    }.bind(this));
+                                });
+                            });
+                        });
+                        </script>
                         <div class="col-md-6">
                             <label class="form-label">New Password (leave blank to keep current)</label>
                             <input type="password" name="pass" class="form-control" id="password">

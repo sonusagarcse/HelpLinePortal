@@ -13,41 +13,47 @@ $sticky_bid = $active_bid;
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_student'])) {
-    $name = mysqli_real_escape_string($con, $_POST['name']);
     $mob = mysqli_real_escape_string($con, $_POST['mob']);
+    $name = mysqli_real_escape_string($con, $_POST['name']);
     $bid = $sticky_bid;
+    $mcategory = isset($_POST['mcategory']) ? (int)$_POST['mcategory'] : 0;
     
     // Form values & Defaults
     $father = isset($_POST['father']) ? mysqli_real_escape_string($con, $_POST['father']) : '';
+    $qualification = isset($_POST['qualification']) ? mysqli_real_escape_string($con, $_POST['qualification']) : ''; 
     $village = isset($_POST['village']) ? mysqli_real_escape_string($con, $_POST['village']) : '';
-    $mother = ''; $email = ''; $dob = '0000-00-00';
-    $gender = ''; $qualification = isset($_POST['qualification']) ? mysqli_real_escape_string($con, $_POST['qualification']) : ''; 
-    $address = ''; $state = 'Bihar';
-    $dis = ''; $pincode = ''; $mcategory = 0; $aadhar = '';
     $status = 1; $date = date('d-m-Y');
-    
-    // Registration Number
-    $year = date('Y');
-    $result = mysqli_query($con, "SELECT COUNT(*) as count FROM registration WHERE regno LIKE 'YUVA-$year-%'");
-    $count = mysqli_fetch_assoc($result)['count'] + 1;
-    $regno = "YUVA-$year-" . str_pad($count, 4, '0', STR_PAD_LEFT);
 
-    $query = "INSERT INTO registration (regno, name, mob, bid, callerid, date, father, mother, email, dob, gender, qualification, address, village, state, dis, pincode, mcategory, aadhar, status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, '', '', '0000-00-00', '', ?, '', ?, 'Bihar', '', '', 0, '', 1)";
-    
-    $stmt = mysqli_prepare($con, $query);
-    mysqli_stmt_bind_param($stmt, "sssiissss", $regno, $name, $mob, $bid, $deo_id, $date, $father, $qualification, $village);
-
-    if (mysqli_stmt_execute($stmt)) {
-        header('Location: add_student.php?success=1');
-        exit;
+    // Validation
+    if (strlen($mob) != 10) {
+        $error = 'Mobile number must be exactly 10 digits.';
     } else {
-        $error = 'Error: ' . mysqli_error($con);
+        // Registration Number
+        $year = date('Y');
+        $result = mysqli_query($con, "SELECT COUNT(*) as count FROM registration WHERE regno LIKE 'YUVA-$year-%'");
+        $count = mysqli_fetch_assoc($result)['count'] + 1;
+        $regno = "YUVA-$year-" . str_pad($count, 4, '0', STR_PAD_LEFT);
+
+        $query = "INSERT INTO registration (regno, name, mob, bid, callerid, date, father, mother, email, dob, gender, qualification, address, village, state, dis, pincode, mcategory, aadhar, status) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, '', '', '0000-00-00', '', ?, '', ?, 'Bihar', '', '', ?, '', 1)";
+        
+        $stmt = mysqli_prepare($con, $query);
+        mysqli_stmt_bind_param($stmt, "sssiissssi", $regno, $name, $mob, $bid, $deo_id, $date, $father, $qualification, $village, $mcategory);
+
+        if (mysqli_stmt_execute($stmt)) {
+            header('Location: add_student.php?success=1');
+            exit;
+        } else {
+            $error = 'Error: ' . mysqli_error($con);
+        }
     }
 }
 
 // Branches
 $branches = mysqli_query($con, "SELECT id, bname FROM branch WHERE status = 1 ORDER BY bname");
+
+// Categories linked to active branch
+$categories = mysqli_query($con, "SELECT id, name FROM member_category WHERE (bid = $active_bid OR bid = 0) AND status = 1 ORDER BY name ASC");
 
 include('includes/header.php');
 ?>
@@ -132,7 +138,19 @@ include('includes/header.php');
                                     </div>
                                 </div>
 
-                                <div class="col-md-12 mt-3 mt-md-4">
+                                <div class="col-md-6 mt-3 mt-md-4">
+                                    <label class="form-label fw-semibold text-secondary">Student Category <span class="text-danger">*</span></label>
+                                    <div class="input-group shadow-sm rounded-4 overflow-hidden border border-light">
+                                        <span class="input-group-text bg-light border-0 text-muted px-4"><i class="fas fa-tags"></i></span>
+                                        <select name="mcategory" class="form-select border-0 bg-light" required>
+                                            <option value="">Select Category</option>
+                                            <?php while($cat = mysqli_fetch_assoc($categories)): ?>
+                                                <option value="<?php echo $cat['id']; ?>"><?php echo htmlspecialchars($cat['name']); ?></option>
+                                            <?php endwhile; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-3 mt-md-4">
                                     <label class="form-label fw-semibold text-secondary">Qualification (Optional)</label>
                                     <div class="input-group shadow-sm rounded-4 overflow-hidden border border-light">
                                         <span class="input-group-text bg-light border-0 text-muted px-4"><i class="fas fa-graduation-cap"></i></span>
@@ -165,9 +183,15 @@ include('includes/header.php');
 <script>
 $(document).ready(function() {
     // Mobile Check
-    $('#student_mobile').on('keyup', function() {
+    $('#student_mobile').on('keyup mouseup change click', function() {
         let mobile = $(this).val();
+        
+        // Remove non-digits
+        mobile = mobile.replace(/\D/g, '');
+        $(this).val(mobile);
+
         if (mobile.length === 10) {
+            $(this).removeClass('is-invalid').addClass('is-valid');
             $.getJSON('ajax_handler.php?action=check_mobile&mobile=' + mobile, function(data) {
                 if (data.exists) {
                     $('#mobile_alert').html(
@@ -180,8 +204,27 @@ $(document).ready(function() {
                     $('#mobile_alert').fadeOut();
                 }
             });
+        } else if (mobile.length > 0) {
+            $(this).addClass('is-invalid').removeClass('is-valid');
+            $('#mobile_alert').html(
+                '<div class="alert alert-danger py-2 mb-0 d-flex align-items-center">' +
+                '<i class="fas fa-exclamation-circle me-2"></i>' +
+                '<span>Please enter exactly 10 digits. Current: <strong>' + mobile.length + '</strong></span>' +
+                '</div>'
+            ).fadeIn();
         } else {
+            $(this).removeClass('is-invalid').removeClass('is-valid');
             $('#mobile_alert').fadeOut();
+        }
+    });
+
+    // Handle form submission validation for 10 digits
+    $('form').on('submit', function(e) {
+        let mobile = $('#student_mobile').val();
+        if (mobile.length !== 10) {
+            e.preventDefault();
+            alert('Mobile number must be exactly 10 digits.');
+            $('#student_mobile').focus();
         }
     });
 

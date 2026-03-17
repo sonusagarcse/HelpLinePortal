@@ -14,6 +14,25 @@ require_once(__DIR__ . '/../connection.php');
 $student_id = isset($_GET['id']) ? (int)$_GET['id'] : (isset($_GET['student_id']) ? (int)$_GET['student_id'] : 0);
 $caller_id = $_SESSION['caller_id'];
 
+// Security Check: Verify student is assigned to this caller (Branch/Category Match)
+$verify_query = "SELECT r.id FROM registration r 
+                 WHERE r.id = $student_id AND (
+                    EXISTS (SELECT 1 FROM caller_branches cb WHERE cb.caller_id = $caller_id AND cb.status = 1 AND cb.branch_id = r.bid AND (cb.category_id = 0 OR cb.category_id = r.mcategory))
+                    OR r.assigned_caller = $caller_id
+                 ) AND r.statusValue = 1"; // Wait, it's status in registration
+// Actually let's use the exact names from index.php
+$verify_query = "SELECT r.id FROM registration r 
+                 WHERE r.id = $student_id AND (
+                    EXISTS (SELECT 1 FROM caller_branches cb WHERE cb.caller_id = $caller_id AND cb.status = 1 AND cb.branch_id = r.bid AND (cb.category_id = 0 OR cb.category_id = r.mcategory))
+                    OR r.assigned_caller = $caller_id
+                 ) AND r.status = 1";
+
+$verify_res = mysqli_query($con, $verify_query);
+if (mysqli_num_rows($verify_res) == 0) {
+    header('Location: index.php?error=unauthorized');
+    exit;
+}
+
 // Handle Student Details Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_student_details') {
     $name = mysqli_real_escape_string($con, $_POST['name']);
