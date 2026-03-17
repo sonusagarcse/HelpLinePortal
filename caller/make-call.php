@@ -330,8 +330,8 @@ endif; ?>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Next Follow-up Date *</label>
-                    <input type="date" name="next_date" class="form-control" required 
+                    <label class="form-label">Next Follow-up Date</label>
+                    <input type="date" name="next_date" class="form-control" 
                         value="<?php echo(isset($data['nextdate']) && $data['nextdate'] != 'None yet') ? htmlspecialchars($data['nextdate']) : ''; ?>">
                 </div>
 

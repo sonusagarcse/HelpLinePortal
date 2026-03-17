@@ -1,6 +1,6 @@
 <?php
 error_reporting(0);
-$con = mysqli_connect("localhost", "ouvcxwtd_yuvahelpline", "ouvcxwtd_yuvahelpline", "ouvcxwtd_yuvahelpline");
+$con = mysqli_connect("localhost", "root", "", "lkvmyuvahelp");
 
 if (!$con) {
     die("Connection failed: " . mysqli_connect_error());

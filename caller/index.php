@@ -81,12 +81,14 @@ $query = "SELECT q.*, b.bname, r.name as student_name
           LEFT JOIN registration r ON q.studentid = r.id
           WHERE q.callerid = $caller_id 
           ORDER BY q.id DESC 
-          LIMIT 10";
+          LIMIT 5";
 $recent_calls = [];
 $result = mysqli_query($con, $query);
 while ($row = mysqli_fetch_assoc($result)) {
     $recent_calls[] = $row;
 }
+
+$followup_count = count($todays_followups);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -158,6 +160,17 @@ while ($row = mysqli_fetch_assoc($result)) {
             background: #fffbef;
         }
 
+        .stat-card.highlight {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            border: 2px solid #f5576c;
+        }
+
+        .stat-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
         @media (max-width: 768px) {
             .container-fluid {
                 padding-left: 10px;
@@ -196,7 +209,7 @@ while ($row = mysqli_fetch_assoc($result)) {
 
     <div class="container-fluid mt-4">
         <div class="row">
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="stat-card">
                     <div class="d-flex align-items-center">
                         <div class="icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
@@ -210,19 +223,36 @@ while ($row = mysqli_fetch_assoc($result)) {
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="stat-card">
-                    <div class="d-flex align-items-center">
-                        <div class="icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                            <i class="fas fa-phone"></i>
-                        </div>
-                        <div class="ms-3">
-                            <h3><?php echo $stats['today']; ?></h3>
-                            <p class="mb-0 text-muted">Today's Calls</p>
+                <a href="todays-calls.php" class="stat-link">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center">
+                            <div class="icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h3><?php echo $stats['today']; ?></h3>
+                                <p class="mb-0 text-muted">Today's Calls</p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </a>
             </div>
             <div class="col-md-3">
+                <a href="todays-followups.php" class="stat-link">
+                    <div class="stat-card <?php echo $followup_count > 0 ? 'highlight' : ''; ?>">
+                        <div class="d-flex align-items-center">
+                            <div class="icon" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);">
+                                <i class="fas fa-calendar-check" style="color: #f5576c;"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h3><?php echo $followup_count; ?></h3>
+                                <p class="mb-0 text-muted">Today's Followup</p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-2">
                 <div class="stat-card">
                     <div class="d-flex align-items-center">
                         <div class="icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
@@ -235,7 +265,7 @@ while ($row = mysqli_fetch_assoc($result)) {
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="stat-card">
                     <div class="d-flex align-items-center">
                         <div class="icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
@@ -250,37 +280,45 @@ while ($row = mysqli_fetch_assoc($result)) {
             </div>
         </div>
 
-        <?php if (!empty($todays_followups)): ?>
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="table-card followup-card">
-                        <h5 class="mb-3 text-warning-emphasis"><i class="fas fa-clock me-2"></i>Today's Follow-ups</h5>
+
+
+        <div class="row">
+            <div class="col-md-12">
+                <?php if (!empty($todays_followups)): ?>
+                    <div class="table-card mb-4" style="border-left: 5px solid #f5576c;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0 text-danger"><i class="fas fa-calendar-check me-2"></i>Top 5 Today's Follow-ups</h5>
+                            <a href="todays-followups.php" class="btn btn-sm btn-outline-danger">View All</a>
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-hover table-sm">
-                                <thead>
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
                                     <tr>
                                         <th>Regno</th>
-                                        <th>Name</th>
+                                        <th>Student Name</th>
                                         <th>Mobile</th>
-                                        <th>Address</th>
-                                        <th>Branch</th>
                                         <th>Remarks</th>
+                                        <th>Branch</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($todays_followups as $data): ?>
+                                    <?php 
+                                    $count = 0;
+                                    foreach ($todays_followups as $data): 
+                                        if ($count >= 5) break;
+                                        $count++;
+                                    ?>
                                         <tr>
                                             <td><?php echo htmlspecialchars($data['student_regno'] ?? 'N/A'); ?></td>
-                                            <td><?php echo htmlspecialchars($data['student_name'] ?? 'N/A'); ?></td>
+                                            <td><strong><?php echo htmlspecialchars($data['student_name'] ?? 'N/A'); ?></strong></td>
                                             <td><?php echo htmlspecialchars($data['student_mob'] ?? 'N/A'); ?></td>
-                                            <td><?php echo htmlspecialchars($data['student_address'] ?? 'N/A'); ?></td>
-                                            <td><?php echo htmlspecialchars($data['bname'] ?? 'N/A'); ?></td>
                                             <td><?php echo htmlspecialchars($data['remarks'] ?? 'No remarks'); ?></td>
+                                            <td><?php echo htmlspecialchars($data['bname'] ?? 'N/A'); ?></td>
                                             <td>
                                                 <a href="make-call.php?id=<?php echo $data['id']; ?>&student_id=<?php echo $data['student_id']; ?>"
                                                     class="btn btn-sm btn-primary">
-                                                    <i class="fas fa-phone"></i> Call Now
+                                                    <i class="fas fa-phone"></i> Call
                                                 </a>
                                             </td>
                                         </tr>
@@ -289,9 +327,9 @@ while ($row = mysqli_fetch_assoc($result)) {
                             </table>
                         </div>
                     </div>
-                </div>
+                <?php endif; ?>
             </div>
-        <?php endif; ?>
+        </div>
 
         <div class="row">
             <div class="col-md-12">
@@ -353,54 +391,7 @@ while ($row = mysqli_fetch_assoc($result)) {
             </div>
         </div>
 
-        <!-- Recent Calls -->
-        <div class="row">
-            <div class="col-md-12">
-                <div class="table-card">
-                    <h5 class="mb-3"><i class="fas fa-history me-2"></i>Recent Calls</h5>
-                    <div class="table-responsive">
-                        <table id="callsTable" class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Student</th>
-                                    <th>Branch</th>
-                                    <th>Description</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($recent_calls as $call): ?>
-                                    <tr>
-                                        <td><?php echo $call['id']; ?></td>
-                                        <td><strong><?php echo htmlspecialchars($call['student_name'] ?? 'N/A'); ?></strong></td>
-                                        <td><?php echo htmlspecialchars($call['bname'] ?? 'N/A'); ?></td>
-                                        <td><?php echo htmlspecialchars(substr($call['des'] ?? '', 0, 30)); ?>...</td>
-                                        <td><?php echo htmlspecialchars($call['date'] ?? ''); ?></td>
-                                        <td>
-                                            <?php if ($call['status'] == 1): ?>
-                                                <span class="badge bg-warning">Pending</span>
-                                            <?php elseif ($call['status'] == 2): ?>
-                                                <span class="badge bg-danger">Rejected</span>
-                                            <?php else: ?>
-                                                <span class="badge bg-success">Completed</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <a href="make-call.php?id=<?php echo $call['studentid']; ?>" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-eye"></i> View
-                                            </a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+
     </div>
     </div>
 
@@ -412,11 +403,8 @@ while ($row = mysqli_fetch_assoc($result)) {
         $(document).ready(function () {
             $('#assignedTable').DataTable({
                 order: [[0, 'desc']],
-                pageLength: 10
-            });
-            $('#callsTable').DataTable({
-                order: [[0, 'desc']],
-                pageLength: 10
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100]
             });
         });
     </script>
