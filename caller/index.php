@@ -21,7 +21,7 @@ $total_query = "SELECT COUNT(*) as total FROM registration r
 $result = mysqli_query($con, $total_query);
 $stats['total_assigned'] = mysqli_fetch_assoc($result)['total'];
 
-// 2. Completed calls (Total unique students called who are marked as completed)
+// Completed calls (Total unique students called who are marked as completed)
 $result_unique = mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND status = 0");
 $stats['completed'] = mysqli_fetch_assoc($result_unique)['total'];
 
@@ -171,6 +171,23 @@ $followup_count = count($todays_followups);
             display: block;
         }
 
+        .blinking-badge {
+            display: inline-block;
+            background: #f5576c;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-decoration: none;
+            box-shadow: 0 0 10px rgba(245, 87, 108, 0.5);
+            animation: blinker 1.5s linear infinite;
+        }
+
+        @keyframes blinker {
+            50% { opacity: 0; }
+        }
+
         @media (max-width: 768px) {
             .container-fluid {
                 padding-left: 10px;
@@ -209,7 +226,7 @@ $followup_count = count($todays_followups);
 
     <div class="container-fluid mt-4">
         <div class="row">
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <div class="stat-card">
                     <div class="d-flex align-items-center">
                         <div class="icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
@@ -217,7 +234,7 @@ $followup_count = count($todays_followups);
                         </div>
                         <div class="ms-3">
                             <h3><?php echo $stats['total_assigned']; ?></h3>
-                            <p class="mb-0 text-muted">Total Assigned</p>
+                            <p class="mb-0 text-muted">Assigned</p>
                         </div>
                     </div>
                 </div>
@@ -231,28 +248,13 @@ $followup_count = count($todays_followups);
                             </div>
                             <div class="ms-3">
                                 <h3><?php echo $stats['today']; ?></h3>
-                                <p class="mb-0 text-muted">Today's Calls</p>
+                                <p class="mb-0 text-muted">Today Calls</p>
                             </div>
                         </div>
                     </div>
                 </a>
             </div>
             <div class="col-md-3">
-                <a href="todays-followups.php" class="stat-link">
-                    <div class="stat-card <?php echo $followup_count > 0 ? 'highlight' : ''; ?>">
-                        <div class="d-flex align-items-center">
-                            <div class="icon" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);">
-                                <i class="fas fa-calendar-check" style="color: #f5576c;"></i>
-                            </div>
-                            <div class="ms-3">
-                                <h3><?php echo $followup_count; ?></h3>
-                                <p class="mb-0 text-muted">Today's Followup</p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-md-2">
                 <div class="stat-card">
                     <div class="d-flex align-items-center">
                         <div class="icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
@@ -265,18 +267,20 @@ $followup_count = count($todays_followups);
                     </div>
                 </div>
             </div>
-            <div class="col-md-2">
-                <div class="stat-card">
-                    <div class="d-flex align-items-center">
-                        <div class="icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="ms-3">
-                            <h3><?php echo $stats['completed']; ?></h3>
-                            <p class="mb-0 text-muted">Completed</p>
+            <div class="col-md-3">
+                <a href="completed-calls.php" class="stat-link">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center">
+                            <div class="icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h3><?php echo $stats['completed']; ?></h3>
+                                <p class="mb-0 text-muted">Completed</p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </a>
             </div>
         </div>
 
@@ -287,7 +291,12 @@ $followup_count = count($todays_followups);
                 <?php if (!empty($todays_followups)): ?>
                     <div class="table-card mb-4" style="border-left: 5px solid #f5576c;">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0 text-danger"><i class="fas fa-calendar-check me-2"></i>Top 5 Today's Follow-ups</h5>
+                            <h5 class="mb-0 text-danger">
+                                <i class="fas fa-calendar-check me-2"></i>Top 5 Today's Follow-ups
+                                <?php if ($followup_count > 0): ?>
+                                    <a href="todays-followups.php" class="blinking-badge ms-2"><?php echo $followup_count; ?></a>
+                                <?php endif; ?>
+                            </h5>
                             <a href="todays-followups.php" class="btn btn-sm btn-outline-danger">View All</a>
                         </div>
                         <div class="table-responsive">
