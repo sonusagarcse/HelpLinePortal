@@ -21,11 +21,17 @@ mysqli_set_charset($con, "utf8");
 $settings_result = mysqli_query($con, "SELECT * FROM global_setting WHERE id = 1");
 $settings = mysqli_fetch_assoc($settings_result);
 
-// Dynamic Site URL
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
-$host = $_SERVER['HTTP_HOST'];
-
-$SITE_URL = $protocol . "://" . $host;
+// Dynamic Site URL Detection
+if (!empty($env['APP_URL'])) {
+    $SITE_URL = rtrim($env['APP_URL'], '/');
+} else {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
+    $host = $_SERVER['HTTP_HOST'];
+    $project_dir = str_replace('\\', '/', __DIR__);
+    $doc_root = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
+    $path = str_replace($doc_root, '', $project_dir);
+    $SITE_URL = $protocol . "://" . $host . $path;
+}
 
 $SITE_NAME = $settings['site_name'];
 $SITE_TITLE = $settings['site_name'];
