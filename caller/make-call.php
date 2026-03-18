@@ -161,313 +161,398 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Make Call - Caller Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --secondary-gradient: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
+            --accent-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --header-bg: #0f172a;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+        }
+
         body {
-            background: #f8f9fa;
+            background-color: #f1f5f9;
+            background-image: radial-gradient(#6366f1 0.5px, #f1f5f9 0.5px);
+            background-size: 24px 24px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-dark);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .ambient-blob {
+            position: fixed;
+            width: 40vmax;
+            height: 40vmax;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%);
+            filter: blur(80px);
+            border-radius: 50%;
+            z-index: -1;
+            animation: float 20s infinite alternate linear;
+        }
+
+        @keyframes float {
+            0% { transform: translate(-10%, -10%) rotate(0deg); }
+            100% { transform: translate(20%, 30%) rotate(360deg); }
+        }
+
+        h1, h2, h3, h4, h5, .navbar-brand {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
         }
 
         .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 1rem 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        .form-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0,0,0,0.05);
+        .premium-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
         }
 
-        .student-details-card {
-            background: #f1f3f5;
-            border-left: 5px solid #28a745;
-            padding: 20px;
-            margin-bottom: 25px;
-            border-radius: 12px;
-        }
-
-        .detail-item {
-            margin-bottom: 15px;
-        }
-
-        .detail-label {
-            font-weight: 600;
-            color: #6c757d;
-            font-size: 0.85rem;
+        .info-label {
+            font-size: 0.75rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
             display: block;
-            margin-bottom: 2px;
         }
 
-        @media (max-width: 768px) {
-            .form-card {
-                padding: 15px;
-            }
-            .btn-lg {
-                font-size: 1rem;
-            }
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .call-action-btn {
+            height: 4rem;
+            border-radius: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+        }
+
+        .call-action-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.4);
+        }
+
+        .wa-btn {
+            background: #25D366;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(37, 211, 102, 0.3);
+        }
+
+        /* Timeline Styling */
+        .timeline {
+            position: relative;
+            padding-left: 3rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 1rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e2e8f0;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2.5rem;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: -2.5rem;
+            width: 1.2rem;
+            height: 1.2rem;
+            border-radius: 50%;
+            background: #6366f1;
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px #e2e8f0;
+            z-index: 1;
+        }
+
+        .timeline-content {
+            background: #f8fafc;
+            padding: 1.25rem;
+            border-radius: 1rem;
+            border: 1px solid #f1f5f9;
+        }
+
+        .btn-premium {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 1rem;
+            padding: 1rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .btn-premium:hover {
+            transform: scale(1.02);
+            color: white;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
         }
     </style>
 </head>
 
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php">
-                <i class="fas fa-headset me-2"></i>Caller Dashboard
+    <div class="ambient-blob"></div>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand d-flex align-items-center" href="index.php">
+                <div class="bg-primary bg-gradient rounded-3 p-2 me-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                    <i class="fas fa-headset text-white"></i>
+                </div>
+                <span class="fw-bold">Caller <span class="text-primary-emphasis">Portal</span></span>
             </a>
             <div class="ms-auto">
-                <a href="index.php" class="btn btn-light btn-sm">
-                    <i class="fas fa-arrow-left me-1"></i>Back
+                <a href="index.php" class="btn btn-outline-light btn-sm rounded-pill px-4 fw-bold">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
                 </a>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        <div class="form-card">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="mb-0"><i class="fas fa-phone me-2"></i>Make Call - Record Details</h4>
-                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editStudentModal">
-                    <i class="fas fa-edit me-1"></i>Edit Student Details
-                </button>
-            </div>
+    <div class="container-fluid px-lg-5 mt-5">
+        <div class="row g-4">
+            <!-- Left Column: Student Details & History -->
+            <div class="col-lg-7">
+                <div class="premium-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="mb-0"><i class="fas fa-user-circle text-primary me-3"></i>Student Profile</h4>
+                        <button type="button" class="btn btn-primary-subtle border border-primary-subtle text-primary btn-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#editStudentModal">
+                            <i class="fas fa-pen-nib me-2"></i>Edit Details
+                        </button>
+                    </div>
 
-            <?php if (isset($_SESSION['success_msg'])): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="fas fa-check-circle me-2"></i><?php echo $_SESSION['success_msg'];
-    unset($_SESSION['success_msg']); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            <?php
-endif; ?>
+                    <?php 
+                    $addr_parts = [];
+                    if ($student): 
+                        // Define address parts for the redesign
+                        $addr_parts = array_filter([
+                            $student['address'] ?? '',
+                            $student['village'] ?? '',
+                            $student['dis'] ?? '',
+                            $student['state'] ?? '',
+                            $student['pincode'] ?? ''
+                        ]);
 
-            <?php if (isset($_SESSION['error_msg'])): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-triangle me-2"></i><?php echo $_SESSION['error_msg'];
-    unset($_SESSION['error_msg']); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            <?php
-endif; ?>
-
-            <?php if ($student): ?>
-                <div class="student-details-card">
-                    <h5 class="mb-3 text-success"><i class="fas fa-user-graduate me-2"></i>Student Information</h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="detail-item">
-                                <span class="detail-label">Full Name:</span>
-                                <b class="fs-4 text-dark"><?php echo htmlspecialchars($student['name']); ?></b>
+                        // Re-fetch settings for whatsapp message if not already available
+                        $set_res = mysqli_query($con, "SELECT whatsapp_msg FROM global_setting WHERE id = 1");
+                        $settings = mysqli_fetch_assoc($set_res);
+                        $wa_msg = $settings['whatsapp_msg'] ?? '';
+                        $wa_msg = str_replace('[name]', $student['name'], $wa_msg);
+                        $wa_url = "https://wa.me/91" . $student['mob'] . "?text=" . urlencode($wa_msg);
+                    endif;
+                    
+                    if ($student):
+                    ?>
+                        <div class="row g-4">
+                            <div class="col-md-12">
+                                <div class="bg-primary bg-opacity-10 p-4 rounded-4 border border-primary border-opacity-10 mb-2 text-center">
+                                    <h2 class="h1 fw-bold mb-1"><?php echo htmlspecialchars($student['name']); ?></h2>
+                                    <p class="text-muted mb-0 uppercase fw-bold small letter-spacing-1">REG: <?php echo htmlspecialchars($student['regno']); ?></p>
+                                </div>
                             </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Father's Name:</span>
-                                <?php echo htmlspecialchars($student['father']); ?>
+                            
+                            <div class="col-md-6">
+                                <span class="info-label"><i class="fas fa-phone-alt me-2"></i>Direct Line</span>
+                                <div class="info-value mb-4"><?php echo htmlspecialchars($student['mob']); ?></div>
+                                
+                                <span class="info-label"><i class="fas fa-id-card-alt me-2"></i>Father's Name</span>
+                                <div class="info-value mb-1"><?php echo htmlspecialchars($student['father']); ?></div>
                             </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Mobile Number:</span>
-                                <div>
-                                    <strong class="fs-4 text-dark"><?php echo htmlspecialchars($student['mob']); ?></strong>
-                                    <div class="mt-3">
-                                        <div class="row g-2">
-                                            <div class="col-8">
-                                                <a href="tel:<?php echo htmlspecialchars($student['mob']); ?>"
-                                                    class="btn btn-success btn-lg w-100 py-3 rounded-pill shadow d-flex align-items-center justify-content-center">
-                                                    <i class="fas fa-phone-alt fa-shake me-3 fa-lg"></i>
-                                                    <span class="fw-bold">START CALL NOW</span>
-                                                </a>
-                                            </div>
-                                            <div class="col-4">
-                                                <?php
-    $wa_msg = $settings['whatsapp_msg'] ?? '';
-    $wa_msg = str_replace('[name]', $student['name'], $wa_msg);
-    $wa_url = "https://wa.me/91" . $student['mob'] . "?text=" . urlencode($wa_msg);
-?>
-                                                <a href="<?php echo $wa_url; ?>" target="_blank"
-                                                    class="btn btn-outline-success btn-lg w-100 py-3 rounded-pill shadow-sm d-flex align-items-center justify-content-center"
-                                                    style="border-color: #25D366; color: #25D366;">
-                                                    <i class="fab fa-whatsapp fa-lg"></i>
-                                                </a>
-                                            </div>
-                                        </div>
+
+                            <div class="col-md-6">
+                                <span class="info-label"><i class="fas fa-graduation-cap me-2"></i>Qualification</span>
+                                <div class="info-value mb-4">
+                                    <span class="badge bg-indigo text-white fw-bold px-3 py-2 rounded-pill" style="background: #6366f1;">
+                                        <?php echo htmlspecialchars(!empty($student['qualification']) ? $student['qualification'] : 'In Progress'); ?>
+                                    </span>
+                                </div>
+                                
+                                <span class="info-label"><i class="fas fa-birthday-cake me-2"></i>Date of Birth</span>
+                                <div class="info-value mb-1"><?php echo htmlspecialchars($student['dob']); ?></div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="p-3 rounded-4" style="background: #f8fafc; border: 1px dashed #e2e8f0;">
+                                    <span class="info-label"><i class="fas fa-map-marker-alt me-2 text-danger"></i>Full Residence Address</span>
+                                    <div class="small fw-semibold mt-1">
+                                        <?php echo htmlspecialchars(implode(', ', (array)$addr_parts)); ?>
                                     </div>
                                 </div>
                             </div>
-                            <?php if (!empty($student['othermob_no'])): ?>
-                                <div class="detail-item">
-                                    <span class="detail-label">Other Mobile:</span>
-                                    <?php echo htmlspecialchars($student['othermob_no']); ?>
+
+                            <div class="col-12 mt-4">
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <a href="tel:<?php echo htmlspecialchars($student['mob']); ?>"
+                                            class="btn btn-success btn-lg w-100 call-action-btn shadow">
+                                            <i class="fas fa-phone-alt fa-shake me-3"></i>START CALL SESSION
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <a href="<?php echo $wa_url; ?>" target="_blank"
+                                            class="btn wa-btn btn-lg w-100 call-action-btn shadow">
+                                            <i class="fab fa-whatsapp me-3"></i>CHAT
+                                        </a>
+                                    </div>
                                 </div>
-                            <?php
-    endif; ?>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="detail-item">
-                                <span class="detail-label">Reg Number:</span>
-                                <?php echo htmlspecialchars($student['regno']); ?>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Date of Birth:</span>
-                                <?php echo htmlspecialchars($student['dob']); ?>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Gender:</span>
-                                <?php echo htmlspecialchars($student['gender']); ?>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Qualification:</span>
-                                <span class="badge bg-warning text-dark fs-6 shadow-sm">
-                                    <i class="fas fa-graduation-cap me-1"></i>
-                                    <?php echo htmlspecialchars(!empty($student['qualification']) ? $student['qualification'] : 'Not specified'); ?>
-                                </span>
                             </div>
                         </div>
-                        <div class="col-12 mt-2">
-                            <div class="detail-item">
-                                <span class="detail-label">Address:</span>
-                                <?php
-    $addr_parts = array_filter([
-        $student['address'],
-        $student['village'],
-        $student['dis'],
-        $student['state'],
-        $student['pincode']
-    ]);
-    echo htmlspecialchars(implode(', ', $addr_parts));
-?>
-                            </div>
-                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="premium-card">
+                    <div class="d-flex align-items-center mb-4">
+                         <h4 class="mb-0"><i class="fas fa-history text-primary me-3"></i>Call Timeline</h4>
                     </div>
-                </div>
-            <?php
-endif; ?>
-
-            <div class="alert alert-info">
-                <strong>Category:</strong> <?php echo htmlspecialchars($data['category_name'] ?? 'N/A'); ?><br>
-                <strong>Previous Date:</strong> <?php echo htmlspecialchars($data['pdate'] ?? 'N/A'); ?><br>
-                <strong>Next Date:</strong> <?php echo htmlspecialchars($data['nextdate'] ?? 'N/A'); ?>
-            </div>
-
-            <form method="POST" action="">
-                <div class="mb-3">
-                    <label class="form-label">Call Description *</label>
-                    <textarea name="description" class="form-control" rows="4" required
-                        placeholder="Enter details about the call..."><?php echo htmlspecialchars($data['des'] ?? ''); ?></textarea>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Remarks</label>
-                    <textarea name="remarks" class="form-control" rows="3"
-                        placeholder="Any additional remarks..."><?php echo htmlspecialchars($data['remarks'] ?? ''); ?></textarea>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Next Follow-up Date</label>
-                    <input type="date" name="next_date" class="form-control" 
-                        value="<?php echo(isset($data['nextdate']) && $data['nextdate'] != 'None yet') ? htmlspecialchars($data['nextdate']) : ''; ?>">
-                </div>
-
-                <div class="mb-3">
-                    <div class="form-check">
-                        <input type="checkbox" name="status" class="form-check-input" id="completed">
-                        <label class="form-check-label" for="completed">
-                            Mark as Completed
-                        </label>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <div class="form-check">
-                        <input type="checkbox" name="reject_student" class="form-check-input" id="reject" onchange="toggleReject(this)">
-                        <label class="form-check-label text-danger fw-bold" for="reject">
-                            <i class="fas fa-user-times me-1"></i> Reject Student (Mark as Inactive)
-                        </label>
-                    </div>
-                </div>
-
-                <script>
-                    function toggleReject(checkbox) {
-                        const statusCheck = document.getElementById('completed');
-                        const nextDateInput = document.querySelector('input[name="next_date"]');
-                        if (checkbox.checked) {
-                            statusCheck.checked = true;
-                            statusCheck.disabled = true;
-                            nextDateInput.required = false;
-                            nextDateInput.disabled = true;
-                            nextDateInput.value = '';
-                        } else {
-                            statusCheck.disabled = false;
-                            nextDateInput.disabled = false;
-                            nextDateInput.required = true;
-                        }
-                    }
-                </script>
-
-                <div class="d-grid gap-2 mb-4">
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="fas fa-save me-2"></i>Save Call Record
-                    </button>
-                    <a href="index.php" class="btn btn-secondary">
-                        <i class="fas fa-times me-2"></i>Cancel
-                    </a>
-                </div>
-            </form>
-
-            <hr>
-
-            <!-- Student History Section -->
-            <div class="mt-4">
-                <h5 class="mb-3"><i class="fas fa-history me-2"></i>Previous Call History</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm table-striped table-bordered">
-                        <thead>
-                            <tr class="table-dark">
-                                <th>Date</th>
-                                <th>Description</th>
-                                <th>Remarks</th>
-                                <th>Next Date</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-$history_query = "SELECT * FROM mquery WHERE studentid = ? ORDER BY id DESC";
-$h_stmt = mysqli_prepare($con, $history_query);
-mysqli_stmt_bind_param($h_stmt, "i", $student_id);
-mysqli_stmt_execute($h_stmt);
-$h_result = mysqli_stmt_get_result($h_stmt);
-$history_found = false;
-while ($h = mysqli_fetch_assoc($h_result)) {
-    $history_found = true;
-?>
-                                <tr>
-                                    <td><?php echo date('d-M-Y H:i', strtotime($h['date'])); ?></td>
-                                    <td><?php echo htmlspecialchars($h['des']); ?></td>
-                                    <td><?php echo htmlspecialchars($h['remarks']); ?></td>
-                                    <td><?php echo htmlspecialchars($h['nextdate'] ?: 'N/A'); ?></td>
-                                    <td>
+                   
+                    <div class="timeline">
+                        <?php
+                        $history_query = "SELECT * FROM mquery WHERE studentid = ? ORDER BY id DESC";
+                        $h_stmt = mysqli_prepare($con, $history_query);
+                        mysqli_stmt_bind_param($h_stmt, "i", $student_id);
+                        mysqli_stmt_execute($h_stmt);
+                        $h_result = mysqli_stmt_get_result($h_stmt);
+                        $history_found = false;
+                        while ($h = mysqli_fetch_assoc($h_result)):
+                            $history_found = true;
+                        ?>
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content shadow-sm">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-white text-dark shadow-sm border px-3 py-2 rounded-pill small fw-bold">
+                                            <i class="far fa-clock me-2 text-primary"></i><?php echo date('d M Y | h:i A', strtotime($h['date'])); ?>
+                                        </span>
                                         <?php if ($h['status'] == 0): ?>
-                                            <span class="badge bg-success">Completed</span>
-                                        <?php
-    else: ?>
-                                            <span class="badge bg-warning">Follow-up</span>
-                                        <?php
-    endif; ?>
-                                    </td>
-                                </tr>
-                                <?php
-}
-if (!$history_found) {
-    echo '<tr><td colspan="5" class="text-center text-muted">No previous calls recorded.</td></tr>';
-}
-?>
-                        </tbody>
-                    </table>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Completed</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill">Follow-up</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <p class="mb-2 fw-semibold text-dark"><?php echo htmlspecialchars($h['des']); ?></p>
+                                    <div class="pt-2 mt-2 border-top small text-muted">
+                                        <i class="far fa-comment-dots me-2"></i><strong>Remark:</strong> <?php echo htmlspecialchars($h['remarks']); ?>
+                                        <?php if($h['nextdate']): ?>
+                                            <span class="ms-3"><i class="far fa-calendar-alt me-2"></i><strong>Next:</strong> <?php echo $h['nextdate']; ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                        <?php if (!$history_found): ?>
+                            <div class="text-center py-5 text-muted">
+                                <i class="fas fa-comment-slash fa-3x mb-3 opacity-25"></i>
+                                <p>No previous call interactions recorded for this student.</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
+
+            <!-- Right Column: record New Call -->
+            <div class="col-lg-5">
+                <div class="premium-card sticky-top" style="top: 100px;">
+                    <h4 class="mb-4"><i class="fas fa-file-signature text-primary me-3"></i>New Interaction</h4>
+                    
+                    <div class="d-flex gap-3 mb-4 bg-light p-3 rounded-4 border">
+                        <div class="flex-fill">
+                            <span class="info-label">Category</span>
+                            <span class="fw-bold text-primary small"><?php echo htmlspecialchars($data['category_name'] ?? 'N/A'); ?></span>
+                        </div>
+                        <div class="vr text-muted opacity-25"></div>
+                        <div class="flex-fill text-center">
+                            <span class="info-label text-center">Last Contact</span>
+                            <span class="fw-bold small"><?php echo htmlspecialchars($data['pdate'] ?? 'Never'); ?></span>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="">
+                        <div class="mb-4">
+                            <label class="info-label"><i class="fas fa-comment-dots me-2"></i>Response Description *</label>
+                            <textarea name="description" class="form-control rounded-4 p-3" rows="5" required
+                                placeholder="What was the student's response?"><?php echo htmlspecialchars($data['des'] ?? ''); ?></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="info-label"><i class="fas fa-sticky-note me-2"></i>Administrative Remarks</label>
+                            <textarea name="remarks" class="form-control rounded-4 p-3" rows="2"
+                                placeholder="Internal internal notes..."><?php echo htmlspecialchars($data['remarks'] ?? ''); ?></textarea>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-12">
+                                <label class="info-label"><i class="fas fa-calendar-plus me-2"></i>Schedule next Follow-up</label>
+                                <input type="date" name="next_date" class="form-control rounded-4 p-3 shadow-sm border-primary border-opacity-25" 
+                                    style="background: #fffcf0;"
+                                    value="<?php echo(isset($data['nextdate']) && $data['nextdate'] != 'None yet') ? htmlspecialchars($data['nextdate']) : ''; ?>">
+                            </div>
+                        </div>
+
+                        <div class="bg-light p-4 rounded-4 mb-4 border border-white">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h6 class="mb-0 fw-bold">Workflow Actions</h6>
+                                    <small class="text-muted">Finalize student status</small>
+                                </div>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" role="switch" name="status" id="completed">
+                                <label class="form-check-label fw-semibold" for="completed">Mark interaction as Resolved</label>
+                            </div>
+
+                            <hr class="my-3 opacity-10">
+
+                            <div class="form-check">
+                                <input type="checkbox" name="reject_student" class="form-check-input" id="reject" onchange="toggleReject(this)">
+                                <label class="form-check-label text-danger fw-bold" for="reject">
+                                    <i class="fas fa-user-times me-1"></i> Permanently Reject Student
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-premium btn-lg rounded-4 shadow py-3">
+                                <i class="fas fa-cloud-upload-alt me-2"></i>SUBMIT RECORD
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Edit Student Modal -->
     <div class="modal fade" id="editStudentModal" tabindex="-1" aria-labelledby="editStudentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
