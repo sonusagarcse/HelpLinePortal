@@ -4,16 +4,58 @@ require_once(dirname(dirname(__DIR__)) . '/config/auth.php');
 
 $page_title = 'Students';
 
-// Get all students
-$query = "SELECT r.*, b.bname, mc.name as category_name 
-          FROM registration r 
-          LEFT JOIN branch b ON r.bid = b.id 
-          LEFT JOIN member_category mc ON r.mcategory = mc.id 
-          ORDER BY r.id DESC";
-$result = mysqli_query($con, $query);
+// Fetch all active branches
+$branches_query = "SELECT id, bname FROM branch WHERE status = 1 ORDER BY bname ASC";
+$branches_result = mysqli_query($con, $branches_query);
+$branches = [];
+while ($row = mysqli_fetch_assoc($branches_result)) {
+    $branches[] = $row;
+}
+
+// Get filter parameters
+$selected_bid = isset($_GET['bid']) ? (int)$_GET['bid'] : 0;
+$selected_cid = isset($_GET['cid']) ? (int)$_GET['cid'] : 0;
+
+// Fetch categories for the selected branch
+$categories = [];
+if ($selected_bid > 0) {
+    $cat_query = "SELECT id, name FROM member_category WHERE bid = ? ORDER BY name ASC";
+    $cat_stmt = mysqli_prepare($con, $cat_query);
+    mysqli_stmt_bind_param($cat_stmt, "i", $selected_bid);
+    mysqli_stmt_execute($cat_stmt);
+    $cat_result = mysqli_stmt_get_result($cat_stmt);
+    while ($row = mysqli_fetch_assoc($cat_result)) {
+        $categories[] = $row;
+    }
+}
+
+// Get students based on filters
 $students = [];
-while ($row = mysqli_fetch_assoc($result)) {
-    $students[] = $row;
+if ($selected_bid > 0) {
+    $query = "SELECT r.*, b.bname, mc.name as category_name 
+              FROM registration r 
+              LEFT JOIN branch b ON r.bid = b.id 
+              LEFT JOIN member_category mc ON r.mcategory = mc.id 
+              WHERE r.bid = ?";
+    
+    if ($selected_cid > 0) {
+        $query .= " AND r.mcategory = ?";
+    }
+    
+    $query .= " ORDER BY r.id DESC";
+    
+    $stmt = mysqli_prepare($con, $query);
+    if ($selected_cid > 0) {
+        mysqli_stmt_bind_param($stmt, "ii", $selected_bid, $selected_cid);
+    } else {
+        mysqli_stmt_bind_param($stmt, "i", $selected_bid);
+    }
+    
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    while ($row = mysqli_fetch_assoc($result)) {
+        $students[] = $row;
+    }
 }
 
 include('../../includes/header.php');
@@ -30,7 +72,7 @@ include('../../includes/header.php');
 
             <div class="user-menu">
                 <div class="user-info">
-                    <div class="name"><?php echo $admin_name; ?></div>
+                    <div class="name"><?php echo htmlspecialchars($admin_name ?? 'Administrator'); ?></div>
                     <div class="role"><?php echo $admin_type == 1 ? 'Super Admin' : ($admin_type == 2 ? 'Manager' : ($admin_type == 3 ? 'Healthcare' : ($admin_type == 4 ? 'Supervisor' : ($admin_type == 5 ? 'Branch' : 'Admin')))); ?></div>
                 </div>
                 <div class="dropdown">
@@ -47,32 +89,72 @@ include('../../includes/header.php');
 
         <div class="main-content">
             <div class="page-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
+                <div class="row align-items-center g-3">
+                    <div class="col-md">
                         <h1>Students Management</h1>
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="../../index.php">Dashboard</a></li>
-                                <li class="breadcrumb-item active">Students</li>
-                            </ol>
-                        </nav>
+                        <p class="text-muted small mb-0">Select a branch to view and manage students.</p>
                     </div>
-                    <div>
-                        <a href="bulk_upload.php" class="btn btn-info">
-                            <i class="fas fa-file-upload me-2"></i>Bulk Upload
-                        </a>
-                        <a href="export.php" class="btn btn-success">
-                            <i class="fas fa-file-excel me-2"></i>Export to Excel
-                        </a>
-                        <a href="add.php" class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>Add New Student
-                        </a>
-                        <a href="categories.php" class="btn btn-secondary">
-                            <i class="fas fa-tags me-2"></i>Categories
-                        </a>
+                    <div class="col-md-auto">
+                        <div class="d-flex gap-2">
+                            <a href="add.php" class="btn btn-primary shadow-sm">
+                                <i class="fas fa-plus me-2"></i>Add Student
+                            </a>
+                            <a href="bulk_upload.php" class="btn btn-outline-primary shadow-sm">
+                                <i class="fas fa-file-upload me-2"></i>Bulk
+                            </a>
+                        </div>
                     </div>
                 </div>
+
+                <div class="table-card mt-4 p-3 border-0 shadow-sm">
+                    <form method="GET" action="" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted mb-1">Select Branch</label>
+                            <select name="bid" class="form-select shadow-sm" onchange="this.form.submit()">
+                                <option value="0">-- Select Branch --</option>
+                                <?php foreach ($branches as $b): ?>
+                                    <option value="<?php echo $b['id']; ?>" <?php echo $selected_bid == $b['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($b['bname']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <?php if ($selected_bid > 0): ?>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted mb-1">Filter by Category</label>
+                            <select name="cid" class="form-select shadow-sm" onchange="this.form.submit()">
+                                <option value="0">All Categories</option>
+                                <?php foreach ($categories as $c): ?>
+                                    <option value="<?php echo $c['id']; ?>" <?php echo $selected_cid == $c['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($c['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <div class="btn-group shadow-sm">
+                                <a href="export.php?bid=<?php echo $selected_bid; ?>&cid=<?php echo $selected_cid; ?>" class="btn btn-success">
+                                    <i class="fas fa-file-excel me-2"></i>Excel
+                                </a>
+                                <a href="print-pdf.php?bid=<?php echo $selected_bid; ?>&cid=<?php echo $selected_cid; ?>" target="_blank" class="btn btn-danger">
+                                    <i class="fas fa-file-pdf me-2"></i>PDF / Print
+                                </a>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </form>
+                </div>
             </div>
+
+            <?php if ($selected_bid == 0): ?>
+                <div class="table-card text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-search fa-3x text-light"></i>
+                    </div>
+                    <h4 class="text-muted">Please select a branch to view students</h4>
+                    <p class="text-muted small">Choose a branch from the dropdown above to load the registered students list.</p>
+                </div>
+            <?php else: ?>
 
             <div class="table-card">
                 <div class="table-responsive">
@@ -138,6 +220,7 @@ include('../../includes/header.php');
                     </table>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

@@ -49,7 +49,7 @@ include('../../includes/header.php');
 
             <div class="user-menu">
                 <div class="user-info">
-                    <div class="name"><?php echo $admin_name; ?></div>
+                    <div class="name"><?php echo htmlspecialchars($admin_name ?? 'Administrator'); ?></div>
                     <div class="role"><?php echo $admin_type == 1 ? 'Super Admin' : ($admin_type == 2 ? 'Manager' : ($admin_type == 3 ? 'Healthcare' : ($admin_type == 4 ? 'Supervisor' : ($admin_type == 5 ? 'Branch' : 'Admin')))); ?></div>
                 </div>
                 <div class="dropdown">
@@ -76,11 +76,11 @@ include('../../includes/header.php');
                             </ol>
                         </nav>
                     </div>
-                <div class="row align-items-center g-3">
-                    <div class="col-md-4">
+                <div class="row align-items-center g-3 mt-1">
+                    <div class="col-md-auto">
                         <form method="GET" action="" id="branchFilterForm">
                             <label class="form-label small fw-bold text-muted mb-1">Filter by Branch</label>
-                            <select name="bid" class="form-select shadow-sm" onchange="this.form.submit()">
+                            <select name="bid" class="form-select shadow-sm" onchange="this.form.submit()" style="min-width: 350px;">
                                 <?php foreach ($branches as $b): ?>
                                     <option value="<?php echo $b['id']; ?>" <?php echo $selected_bid == $b['id'] ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($b['bname']); ?> (<?php echo $b['cat_count']; ?>)
@@ -89,7 +89,7 @@ include('../../includes/header.php');
                             </select>
                         </form>
                     </div>
-                    <div class="col-md-8 text-md-end">
+                    <div class="col-md text-md-end align-self-end">
                         <a href="add-category.php?bid=<?php echo $selected_bid; ?>" class="btn btn-primary shadow-sm">
                             <i class="fas fa-plus me-2"></i>Add Category
                         </a>

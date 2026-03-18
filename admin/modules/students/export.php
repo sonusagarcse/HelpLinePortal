@@ -2,13 +2,46 @@
 require_once(dirname(dirname(__DIR__)) . '/config/config.php');
 require_once(dirname(dirname(__DIR__)) . '/config/auth.php');
 
-// Get all students
+// Get filter parameters
+$selected_bid = isset($_GET['bid']) ? (int)$_GET['bid'] : 0;
+$selected_cid = isset($_GET['cid']) ? (int)$_GET['cid'] : 0;
+
+// Base query
 $query = "SELECT r.*, b.bname, mc.name as category_name 
           FROM registration r 
           LEFT JOIN branch b ON r.bid = b.id 
-          LEFT JOIN member_category mc ON r.mcategory = mc.id 
-          ORDER BY r.id DESC";
-$result = mysqli_query($con, $query);
+          LEFT JOIN member_category mc ON r.mcategory = mc.id";
+
+$where_clauses = [];
+$params = "";
+$bind_values = [];
+
+if ($selected_bid > 0) {
+    $where_clauses[] = "r.bid = ?";
+    $params .= "i";
+    $bind_values[] = $selected_bid;
+}
+
+if ($selected_cid > 0) {
+    $where_clauses[] = "r.mcategory = ?";
+    $params .= "i";
+    $bind_values[] = $selected_cid;
+}
+
+if (!empty($where_clauses)) {
+    $query .= " WHERE " . implode(" AND ", $where_clauses);
+}
+
+$query .= " ORDER BY r.id DESC";
+
+if (!empty($params)) {
+    $stmt = mysqli_prepare($con, $query);
+    mysqli_stmt_bind_param($stmt, $params, ...$bind_values);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+} else {
+    $result = mysqli_query($con, $query);
+}
 
 // Set headers for Excel download
 header('Content-Type: application/vnd.ms-excel');
