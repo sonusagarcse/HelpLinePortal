@@ -39,7 +39,7 @@ $active_bname = $_SESSION['active_bname'];
 // Update active category from session or database
 if (!isset($_SESSION['active_cid'])) {
     // Try to get first category for this branch if none selected
-    $c_query = "SELECT id, name FROM member_category WHERE (bid = ? OR bid = 0) AND status = 1 LIMIT 1";
+    $c_query = "SELECT id, name FROM member_category WHERE bid = ? AND status = 1 LIMIT 1";
     $c_stmt = mysqli_prepare($con, $c_query);
     mysqli_stmt_bind_param($c_stmt, "i", $active_bid);
     mysqli_stmt_execute($c_stmt);

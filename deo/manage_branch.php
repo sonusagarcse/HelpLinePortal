@@ -34,7 +34,7 @@ if (isset($_GET['activate_id'])) {
 if (isset($_GET['activate_cid'])) {
     $activate_cid = (int)$_GET['activate_cid'];
     
-    $query = "SELECT id, name FROM member_category WHERE id = ? AND (bid = ? OR bid = 0)";
+    $query = "SELECT id, name FROM member_category WHERE id = ? AND bid = ?";
     $stmt = mysqli_prepare($con, $query);
     mysqli_stmt_bind_param($stmt, "ii", $activate_cid, $active_bid);
     mysqli_stmt_execute($stmt);
@@ -83,7 +83,7 @@ while ($row = mysqli_fetch_assoc($result)) {
 // Get categories for active branch
 $categories = [];
 if ($active_bid > 0) {
-    $query = "SELECT * FROM member_category WHERE (bid = ? OR bid = 0) AND status = 1 ORDER BY name";
+    $query = "SELECT * FROM member_category WHERE bid = ? AND status = 1 ORDER BY name";
     $stmt = mysqli_prepare($con, $query);
     mysqli_stmt_bind_param($stmt, "i", $active_bid);
     mysqli_stmt_execute($stmt);
