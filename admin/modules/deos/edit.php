@@ -26,7 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = mysqli_real_escape_string($con, $_POST['name']);
     $email = mysqli_real_escape_string($con, $_POST['email']);
     $mob = mysqli_real_escape_string($con, $_POST['mob']);
-    $assigned_branches = isset($_POST['branches']) ? $_POST['branches'] : [];
+    $bid = isset($_POST['branch']) ? (int)$_POST['branch'] : 0;
+    $assigned_branches = $bid > 0 ? [$bid] : [];
     $status = isset($_POST['status']) ? 1 : 0;
     
     mysqli_begin_transaction($con);
@@ -119,19 +120,15 @@ include('../../includes/header.php');
                             <input type="text" name="mob" class="form-control" value="<?php echo htmlspecialchars($deo['mob']); ?>" required>
                         </div>
                         <div class="col-md-12 mb-3">
-                            <label class="form-label d-block fw-bold">Branch Assignments (Select multiple)</label>
-                            <div class="row bg-light p-3 rounded border mx-0" style="max-height: 200px; overflow-y: auto;">
+                            <label class="form-label fw-bold">Assign Branch *</label>
+                            <select name="branch" class="form-select shadow-sm" required>
+                                <option value="">Select Branch</option>
                                 <?php mysqli_data_seek($branches, 0); while($b = mysqli_fetch_assoc($branches)): ?>
-                                    <div class="col-md-4 mb-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="branches[]" value="<?php echo $b['id']; ?>" id="branch_<?php echo $b['id']; ?>" <?php echo in_array($b['id'], $assigned_branches) ? 'checked' : ''; ?>>
-                                            <label class="form-check-label" for="branch_<?php echo $b['id']; ?>">
-                                                <?php echo htmlspecialchars($b['bname']); ?>
-                                            </label>
-                                        </div>
-                                    </div>
+                                    <option value="<?php echo $b['id']; ?>" <?php echo in_array($b['id'], $assigned_branches) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($b['bname']); ?>
+                                    </option>
                                 <?php endwhile; ?>
-                            </div>
+                            </select>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Password (leave blank to keep current)</label>

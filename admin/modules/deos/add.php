@@ -10,8 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = mysqli_real_escape_string($con, $_POST['name']);
     $email = mysqli_real_escape_string($con, $_POST['email']);
     $mob = mysqli_real_escape_string($con, $_POST['mob']);
-    $bid = 0; // Keeping for compatibility if needed, but primary logic moves to deo_branches
-    $assigned_branches = isset($_POST['branches']) ? $_POST['branches'] : [];
+    $bid = isset($_POST['branch']) ? (int)$_POST['branch'] : 0;
+    $assigned_branches = $bid > 0 ? [$bid] : [];
     $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
     $status = isset($_POST['status']) ? 1 : 0;
     $date = date('d-m-Y');
@@ -122,20 +122,16 @@ include('../../includes/header.php');
                             <input type="text" name="mob" class="form-control" required>
                         </div>
                         <div class="col-md-12 mb-3">
-                            <label class="form-label d-block fw-bold">Branch Assignments (Select multiple)</label>
-                            <div class="row bg-light p-3 rounded border mx-0" style="max-height: 200px; overflow-y: auto;">
-                                <?php while($b = mysqli_fetch_assoc($branches)): ?>
-                                    <div class="col-md-4 mb-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="branches[]" value="<?php echo $b['id']; ?>" id="branch_<?php echo $b['id']; ?>">
-                                            <label class="form-check-label" for="branch_<?php echo $b['id']; ?>">
-                                                <?php echo htmlspecialchars($b['bname']); ?>
-                                            </label>
-                                        </div>
-                                    </div>
+                            <label class="form-label fw-bold">Assign Branch *</label>
+                            <select name="branch" class="form-select shadow-sm" required>
+                                <option value="">Select Branch</option>
+                                <?php mysqli_data_seek($branches, 0); while($b = mysqli_fetch_assoc($branches)): ?>
+                                    <option value="<?php echo $b['id']; ?>">
+                                        <?php echo htmlspecialchars($b['bname']); ?>
+                                    </option>
                                 <?php endwhile; ?>
-                            </div>
-                            <small class="text-muted">DEO will be able to switch between these assigned branches.</small>
+                            </select>
+                            <small class="text-muted">DEO will be restricted to this specific branch.</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Password *</label>

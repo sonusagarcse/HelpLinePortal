@@ -28,6 +28,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (mysqli_stmt_execute($stmt)) {
         $branch_id = mysqli_insert_id($con);
+        
+        // Create default category "office" for the new branch
+        $cat_query = "INSERT INTO member_category (name, bid, date, status) VALUES ('office', ?, ?, 1)";
+        $cat_stmt = mysqli_prepare($con, $cat_query);
+        mysqli_stmt_bind_param($cat_stmt, "is", $branch_id, $date);
+        mysqli_stmt_execute($cat_stmt);
+
         logActivity('create_branch', 'branch', $branch_id, null, json_encode($_POST));
         header('Location: list.php?success=added');
         exit;

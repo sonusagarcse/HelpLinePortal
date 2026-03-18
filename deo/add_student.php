@@ -82,16 +82,7 @@ include('includes/header.php');
                 
                 <div class="alert bg-white rounded-4 border-0 mb-4 shadow-sm d-flex align-items-center p-4">
                     <div class="row w-100 g-0">
-                        <div class="col-md-6 d-flex align-items-center mb-3 mb-md-0">
-                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
-                                <i class="fas fa-building text-primary fa-lg"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Active Branch: <?php echo htmlspecialchars($active_bname); ?></h6>
-                                <span class="text-muted small"><a href="manage_branch.php" class="text-decoration-none">Change Branch</a></span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 d-flex align-items-center border-start-md ps-md-4">
+                        <div class="col-md-12 d-flex align-items-center ps-md-4">
                             <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
                                 <i class="fas fa-tags text-success fa-lg"></i>
                             </div>
