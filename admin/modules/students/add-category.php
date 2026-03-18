@@ -64,7 +64,7 @@ include('../../includes/header.php');
                             <select name="bid" class="form-select" required>
                                 <option value="0">Global (All Branches)</option>
                                 <?php while($b = mysqli_fetch_assoc($branches)): ?>
-                                    <option value="<?php echo $b['id']; ?>"><?php echo htmlspecialchars($b['bname']); ?></option>
+                                    <option value="<?php echo $b['id']; ?>" <?php echo (isset($_GET['bid']) && $_GET['bid'] == $b['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($b['bname']); ?></option>
                                 <?php endwhile; ?>
                             </select>
                         </div>

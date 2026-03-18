@@ -101,7 +101,7 @@ include('includes/header.php');
 
             <div class="user-menu">
                 <div class="user-info">
-                    <div class="name"><?php echo $admin_name; ?></div>
+                    <div class="name"><?php echo htmlspecialchars($admin_name ?? 'Administrator'); ?></div>
                     <div class="role"><?php echo $admin_type == 1 ? 'Super Admin' : ($admin_type == 2 ? 'Manager' : ($admin_type == 3 ? 'Healthcare' : ($admin_type == 4 ? 'Supervisor' : ($admin_type == 5 ? 'Branch' : 'Admin')))); ?></div>
                 </div>
                 <div class="dropdown">
@@ -125,128 +125,124 @@ include('includes/header.php');
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Page Header -->
-            <div class="page-header">
-                <h1>Dashboard Overview</h1>
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item active">Dashboard</li>
-                    </ol>
-                </nav>
+            <!-- Welcome Header -->
+            <div class="page-header d-md-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h1>Dashboard Overview</h1>
+                    <p class="text-muted small mb-0">Welcome back, <strong><?php echo $admin_name; ?></strong>. Here is what's happening today.</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <span class="badge bg-white text-dark shadow-sm border py-2 px-3">
+                        <i class="far fa-calendar-alt me-2 text-primary"></i>
+                        <?php echo date('D, d M Y'); ?>
+                    </span>
+                </div>
             </div>
 
             <!-- Statistics Cards -->
-            <div class="row g-3 mb-4">
-                <div class="col-xl-3 col-md-6">
+            <div class="row g-4 mb-4">
+                <div class="col-xl-3 col-sm-6">
                     <div class="stat-card">
-                        <div class="d-flex align-items-center">
-                            <div class="icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                <i class="fas fa-building"></i>
-                            </div>
-                            <div class="content ms-3">
-                                <h3><?php echo $stats['branches']; ?></h3>
-                                <p>Total Branches</p>
-                            </div>
+                        <div class="icon" style="background: rgba(79, 70, 229, 0.1); color: var(--primary);">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="content">
+                            <h3><?php echo number_format($stats['branches']); ?></h3>
+                            <p>Total Branches</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <div class="col-xl-3 col-sm-6">
                     <div class="stat-card">
-                        <div class="d-flex align-items-center">
-                            <div class="icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                                <i class="fas fa-user-graduate"></i>
-                            </div>
-                            <div class="content ms-3">
-                                <h3><?php echo $stats['students']; ?></h3>
-                                <p>Total Students</p>
-                            </div>
+                        <div class="icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="content">
+                            <h3><?php echo number_format($stats['students']); ?></h3>
+                            <p>Total Students</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <div class="col-xl-3 col-sm-6">
                     <div class="stat-card">
-                        <div class="d-flex align-items-center">
-                            <div class="icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                                <i class="fas fa-book"></i>
-                            </div>
-                            <div class="content ms-3">
-                                <h3><?php echo $stats['courses']; ?></h3>
-                                <p>Total Courses</p>
-                            </div>
+                        <div class="icon" style="background: rgba(59, 130, 246, 0.1); color: var(--info);">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="content">
+                            <h3><?php echo number_format($stats['courses']); ?></h3>
+                            <p>Total Courses</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <div class="col-xl-3 col-sm-6">
                     <div class="stat-card">
-                        <div class="d-flex align-items-center">
-                            <div class="icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-                                <i class="fas fa-rupee-sign"></i>
-                            </div>
-                            <div class="content ms-3">
-                                <h3>₹<?php echo number_format($stats['revenue']); ?></h3>
-                                <p>Total Revenue</p>
-                            </div>
+                        <div class="icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);">
+                            <i class="fas fa-rupee-sign"></i>
+                        </div>
+                        <div class="content">
+                            <h3>₹<?php echo number_format($stats['revenue']); ?></h3>
+                            <p>Total Revenue</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Secondary Stats -->
-            <div class="row g-3 mb-4">
-                <div class="col-xl-3 col-md-6">
+            <!-- Secondary Stats Grid -->
+            <div class="row g-4 mb-4">
+                <div class="col-xl-3 col-sm-6">
                     <div class="stat-card">
-                        <div class="d-flex align-items-center">
-                            <div class="icon" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="icon mb-0" style="background: var(--slate-100); color: var(--slate-600); width: 44px; height: 44px; font-size: 18px;">
                                 <i class="fas fa-user-tie"></i>
                             </div>
-                            <div class="content ms-3">
-                                <h3><?php echo $stats['managers']; ?></h3>
-                                <p>Managers</p>
+                            <div class="content">
+                                <h3 style="font-size: 20px;"><?php echo $stats['managers']; ?></h3>
+                                <p style="font-size: 11px;">Managers</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <div class="col-xl-3 col-sm-6">
                     <div class="stat-card">
-                        <div class="d-flex align-items-center">
-                            <div class="icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="icon mb-0" style="background: var(--slate-100); color: var(--slate-600); width: 44px; height: 44px; font-size: 18px;">
                                 <i class="fas fa-user-shield"></i>
                             </div>
-                            <div class="content ms-3">
-                                <h3><?php echo $stats['supervisors']; ?></h3>
-                                <p>Supervisors</p>
+                            <div class="content">
+                                <h3 style="font-size: 20px;"><?php echo $stats['supervisors']; ?></h3>
+                                <p style="font-size: 11px;">Supervisors</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <div class="col-xl-3 col-sm-6">
                     <div class="stat-card">
-                        <div class="d-flex align-items-center">
-                            <div class="icon" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="icon mb-0" style="background: var(--slate-100); color: var(--slate-600); width: 44px; height: 44px; font-size: 18px;">
                                 <i class="fas fa-headset"></i>
                             </div>
-                            <div class="content ms-3">
-                                <h3><?php echo $stats['callers']; ?></h3>
-                                <p>Callers</p>
+                            <div class="content">
+                                <h3 style="font-size: 20px;"><?php echo $stats['callers']; ?></h3>
+                                <p style="font-size: 11px;">Callers</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <div class="col-xl-3 col-sm-6">
                     <div class="stat-card">
-                        <div class="d-flex align-items-center">
-                            <div class="icon" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="icon mb-0" style="background: var(--slate-100); color: var(--slate-600); width: 44px; height: 44px; font-size: 18px;">
                                 <i class="fas fa-comments"></i>
                             </div>
-                            <div class="content ms-3">
-                                <h3><?php echo $stats['queries']; ?></h3>
-                                <p>Active Queries</p>
+                            <div class="content">
+                                <h3 style="font-size: 20px;"><?php echo $stats['queries']; ?></h3>
+                                <p style="font-size: 11px;">Queries</p>
                             </div>
                         </div>
                     </div>
@@ -254,76 +250,99 @@ include('includes/header.php');
             </div>
 
             <!-- Charts Row -->
-            <div class="row g-3 mb-4">
+            <div class="row g-4 mb-4">
                 <div class="col-xl-8">
-                    <div class="table-card">
-                        <h5 class="mb-3">Registration Trends (Last 6 Months)</h5>
-                        <canvas id="registrationChart" height="80"></canvas>
+                    <div class="table-card h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <h5 class="mb-0 fw-bold">Registration Trends</h5>
+                            <span class="text-muted small">Last 6 Months</span>
+                        </div>
+                        <canvas id="registrationChart" height="100"></canvas>
                     </div>
                 </div>
 
                 <div class="col-xl-4">
-                    <div class="table-card">
-                        <h5 class="mb-3">Top 10 Branches by Students</h5>
+                    <div class="table-card h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <h5 class="mb-0 fw-bold">Branch Distribution</h5>
+                            <i class="fas fa-chart-pie text-muted"></i>
+                        </div>
                         <canvas id="branchChart" height="200"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- Recent Activities -->
-            <div class="row g-3">
+            <div class="row g-4 mb-4">
                 <div class="col-xl-6">
-                    <div class="table-card">
-                        <h5 class="mb-3">Recent Registrations</h5>
+                    <div class="table-card h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h5 class="mb-0 fw-bold">Recent Registrations</h5>
+                            <a href="modules/students/list.php" class="btn btn-sm btn-link text-decoration-none p-0 text-primary fw-bold">
+                                View All <i class="fas fa-chevron-right ms-1 small"></i>
+                            </a>
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover align-middle mb-0">
                                 <thead>
                                     <tr>
                                         <th>Name</th>
                                         <th>Branch</th>
-                                        <th>Date</th>
+                                        <th class="text-end">Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($recent_registrations as $reg): ?>
                                         <tr>
-                                            <td><?php echo htmlspecialchars($reg['name'] ?? 'N/A'); ?></td>
-                                            <td><?php echo htmlspecialchars($reg['bname'] ?? 'N/A'); ?></td>
-                                            <td><?php echo htmlspecialchars($reg['date'] ?? 'N/A'); ?></td>
+                                            <td>
+                                                <div class="fw-600 text-dark"><?php echo htmlspecialchars($reg['name'] ?? 'N/A'); ?></div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border"><?php echo htmlspecialchars($reg['bname'] ?? 'General'); ?></span>
+                                            </td>
+                                            <td class="text-end text-muted small"><?php echo htmlspecialchars($reg['date'] ?? 'N/A'); ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
-                        <a href="modules/students/list.php" class="btn btn-sm btn-primary mt-2">View All Students</a>
                     </div>
                 </div>
 
                 <div class="col-xl-6">
-                    <div class="table-card">
-                        <h5 class="mb-3">Recent Queries</h5>
+                    <div class="table-card h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h5 class="mb-0 fw-bold">Recent Queries</h5>
+                            <a href="modules/inquiries/list.php" class="btn btn-sm btn-link text-decoration-none p-0 text-primary fw-bold">
+                                View All <i class="fas fa-chevron-right ms-1 small"></i>
+                            </a>
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover align-middle mb-0">
                                 <thead>
                                     <tr>
                                         <th>Caller</th>
                                         <th>Description</th>
-                                        <th>Date</th>
+                                        <th class="text-end">Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($recent_queries as $query): ?>
                                         <tr>
-                                            <td><?php echo htmlspecialchars($query['caller_name'] ?? 'N/A'); ?></td>
-                                            <td><?php echo htmlspecialchars(substr(strip_tags($query['des'] ?? ''), 0, 50)); ?>...
+                                            <td>
+                                                <div class="fw-600 text-dark"><?php echo htmlspecialchars($query['caller_name'] ?? 'N/A'); ?></div>
                                             </td>
-                                            <td><?php echo htmlspecialchars($query['date'] ?? 'N/A'); ?></td>
+                                            <td>
+                                                <span class="text-truncate d-inline-block" style="max-width: 200px;">
+                                                    <?php echo htmlspecialchars(substr(strip_tags($query['des'] ?? ''), 0, 50)); ?>...
+                                                </span>
+                                            </td>
+                                            <td class="text-end text-muted small"><?php echo htmlspecialchars($query['date'] ?? 'N/A'); ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
-                        <a href="modules/inquiries/list.php" class="btn btn-sm btn-primary mt-2">View All Queries</a>
                     </div>
                 </div>
             </div>
@@ -341,8 +360,14 @@ include('includes/header.php');
             datasets: [{
                 label: 'Registrations',
                 data: <?php echo json_encode(array_column($monthly_data, 'count')); ?>,
-                borderColor: 'rgb(102, 126, 234)',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                borderWidth: 3,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#4f46e5',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
                 tension: 0.4,
                 fill: true
             }]
@@ -351,16 +376,25 @@ include('includes/header.php');
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
-                legend: {
-                    display: false
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 12,
+                    titleFont: { family: 'Inter', size: 13, weight: '600' },
+                    bodyFont: { family: 'Inter', size: 12 },
+                    cornerRadius: 8,
+                    displayColors: false
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
+                    grid: { color: 'rgba(226, 232, 240, 0.5)', drawBorder: false },
+                    ticks: { font: { family: 'Inter', size: 11 }, color: '#64748b' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { family: 'Inter', size: 11 }, color: '#64748b' }
                 }
             }
         }
@@ -375,31 +409,35 @@ include('includes/header.php');
             datasets: [{
                 data: <?php echo json_encode(array_column($branch_data, 'count')); ?>,
                 backgroundColor: [
-                    'rgba(102, 126, 234, 0.8)',
-                    'rgba(118, 75, 162, 0.8)',
-                    'rgba(240, 147, 251, 0.8)',
-                    'rgba(245, 87, 108, 0.8)',
-                    'rgba(79, 172, 254, 0.8)',
-                    'rgba(0, 242, 254, 0.8)',
-                    'rgba(247, 112, 154, 0.8)',
-                    'rgba(254, 225, 64, 0.8)',
-                    'rgba(48, 207, 208, 0.8)',
-                    'rgba(51, 8, 103, 0.8)'
-                ]
+                    '#4f46e5', '#10b981', '#3b82f6', '#f59e0b', '#ef4444',
+                    '#8b5cf6', '#ec4899', '#06b6d4', '#14b8a6', '#6366f1'
+                ],
+                borderWidth: 0,
+                hoverOffset: 10
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            cutout: '70%',
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        boxWidth: 12,
-                        font: {
-                            size: 10
-                        }
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 15,
+                        font: { family: 'Inter', size: 11, weight: '500' },
+                        color: '#64748b'
                     }
+                },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 12,
+                    cornerRadius: 8,
+                    bodyFont: { family: 'Inter', size: 12 }
                 }
             }
         }

@@ -7,9 +7,16 @@
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    // Sidebar toggle
-    $('#sidebarCollapse').on('click', function () {
-        $('#sidebar, #content').toggleClass('active');
+    // Sidebar toggle and overlay logic
+    $('#sidebarCollapse, #sidebarOverlay').on('click', function () {
+        $('#sidebar, #content, #sidebarOverlay').toggleClass('active');
+    });
+
+    // Close sidebar on mobile when window is resized to desktop
+    $(window).on('resize', function() {
+        if ($(window).width() > 991.98) {
+            $('#sidebar, #content, #sidebarOverlay').removeClass('active');
+        }
     });
 
     // Initialize DataTables

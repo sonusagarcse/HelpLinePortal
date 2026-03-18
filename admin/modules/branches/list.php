@@ -4,12 +4,19 @@ require_once(dirname(dirname(__DIR__)) . '/config/auth.php');
 
 $page_title = 'Branches';
 
-// Get all branches
+// Filter by status
+$status_filter = isset($_GET['status']) ? (int)$_GET['status'] : 1;
+
+// Get branches based on status
 $query = "SELECT b.*, m.name as manager_name 
           FROM branch b 
           LEFT JOIN manager m ON b.mid = m.id 
+          WHERE b.status = ? 
           ORDER BY b.id DESC";
-$result = mysqli_query($con, $query);
+$stmt = mysqli_prepare($con, $query);
+mysqli_stmt_bind_param($stmt, "i", $status_filter);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
 $branches = [];
 while ($row = mysqli_fetch_assoc($result)) {
     $branches[] = $row;
@@ -66,8 +73,16 @@ include('../../includes/header.php');
                             </ol>
                         </nav>
                     </div>
-                    <div>
-                        <a href="add.php" class="btn btn-primary">
+                    <div class="d-flex gap-2">
+                        <div class="btn-group shadow-sm">
+                            <a href="list.php?status=1" class="btn <?php echo $status_filter == 1 ? 'btn-success' : 'btn-outline-success'; ?> px-3">
+                                <i class="fas fa-check-circle me-1"></i> Active
+                            </a>
+                            <a href="list.php?status=0" class="btn <?php echo $status_filter == 0 ? 'btn-danger' : 'btn-outline-danger'; ?> px-3">
+                                <i class="fas fa-times-circle me-1"></i> Inactive
+                            </a>
+                        </div>
+                        <a href="add.php" class="btn btn-primary shadow-sm ms-2">
                             <i class="fas fa-plus me-2"></i>Add New Branch
                         </a>
                     </div>

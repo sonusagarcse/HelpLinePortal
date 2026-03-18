@@ -14,6 +14,7 @@ if ($admin_pos !== false) {
 
 $admin_base = $protocol . '://' . $host . $base_dir . '/admin/';
 ?>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 <nav id="sidebar">
     <div class="sidebar-header">
         <?php

@@ -4,12 +4,32 @@ require_once(dirname(dirname(__DIR__)) . '/config/auth.php');
 
 $page_title = 'Member Categories';
 
-// Get all member categories with branch names
-$query = "SELECT mc.*, b.bname as branch_name 
+// Fetch all branches with category counts
+$branches_query = "SELECT b.id, b.bname, 
+                  (SELECT COUNT(*) FROM member_category WHERE bid = b.id) as cat_count 
+                  FROM branch b 
+                  WHERE b.status = 1 
+                  ORDER BY b.bname";
+$branches_result = mysqli_query($con, $branches_query);
+$branches = [];
+while ($row = mysqli_fetch_assoc($branches_result)) {
+    $branches[] = $row;
+}
+
+// Get selected branch ID (default to first branch if available)
+$selected_bid = isset($_GET['bid']) ? (int)$_GET['bid'] : ($branches[0]['id'] ?? 0);
+
+// Get member categories for selected branch with student counts
+$query = "SELECT mc.*, b.bname as branch_name,
+          (SELECT COUNT(*) FROM registration WHERE mcategory = mc.id) as student_count
           FROM member_category mc 
           LEFT JOIN branch b ON mc.bid = b.id 
+          WHERE mc.bid = ? 
           ORDER BY mc.id DESC";
-$result = mysqli_query($con, $query);
+$stmt = mysqli_prepare($con, $query);
+mysqli_stmt_bind_param($stmt, "i", $selected_bid);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
 $categories = [];
 while ($row = mysqli_fetch_assoc($result)) {
     $categories[] = $row;
@@ -56,11 +76,25 @@ include('../../includes/header.php');
                             </ol>
                         </nav>
                     </div>
-                    <div>
-                        <a href="add-category.php" class="btn btn-primary">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-4">
+                        <form method="GET" action="" id="branchFilterForm">
+                            <label class="form-label small fw-bold text-muted mb-1">Filter by Branch</label>
+                            <select name="bid" class="form-select shadow-sm" onchange="this.form.submit()">
+                                <?php foreach ($branches as $b): ?>
+                                    <option value="<?php echo $b['id']; ?>" <?php echo $selected_bid == $b['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($b['bname']); ?> (<?php echo $b['cat_count']; ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </form>
+                    </div>
+                    <div class="col-md-8 text-md-end">
+                        <a href="add-category.php?bid=<?php echo $selected_bid; ?>" class="btn btn-primary shadow-sm">
                             <i class="fas fa-plus me-2"></i>Add Category
                         </a>
                     </div>
+                </div>
                 </div>
             </div>
 
@@ -72,7 +106,7 @@ include('../../includes/header.php');
                                 <th>ID</th>
                                 <th>Category Name</th>
                                 <th>Branch</th>
-                                <th>Description</th>
+                                <th>Students</th>
                                 <th>Date</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -90,7 +124,10 @@ include('../../includes/header.php');
                                             <span class="badge bg-light text-dark"><?php echo htmlspecialchars($category['branch_name']); ?></span>
                                         <?php endif; ?>
                                     </td>
-                                    <td><?php echo htmlspecialchars(substr(strip_tags($category['des']), 0, 100)); ?>...
+                                    <td>
+                                        <span class="badge bg-primary rounded-pill">
+                                            <?php echo $category['student_count']; ?> Students
+                                        </span>
                                     </td>
                                     <td><?php echo htmlspecialchars(($category['date']) ?? ''); ?></td>
                                     <td>
