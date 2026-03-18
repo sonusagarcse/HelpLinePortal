@@ -15,7 +15,7 @@ if (!$con) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-mysqli_set_charset($con, "utf8");
+mysqli_set_charset($con, "utf8mb4");
 
 // Get global settings
 $settings_result = mysqli_query($con, "SELECT * FROM global_setting WHERE id = 1");
