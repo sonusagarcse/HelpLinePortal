@@ -54,10 +54,6 @@ try {
         'mob' => 'mob',
         'Email Address' => 'email',
         'email' => 'email',
-        'Branch ID' => 'bid',
-        'bid' => 'bid',
-        'Category ID' => 'mcategory',
-        'mcategory' => 'mcategory',
         'Qualification' => 'qualification',
         'qualification' => 'qualification',
         'Date of Birth' => 'dob',
@@ -78,8 +74,8 @@ try {
         'aadhar' => 'aadhar'
     ];
 
-    // Required database fields
-    $requiredFields = ['regno', 'name', 'father', 'mob', 'bid', 'mcategory', 'qualification', 'dob', 'gender', 'address', 'state', 'dis'];
+    // Required database fields (now excluding bid/mcategory as they come from POST)
+    $requiredFields = ['regno', 'name', 'father', 'mob', 'qualification', 'dob', 'gender', 'address', 'state', 'dis'];
 
     // Create column index map (map Excel columns to database fields)
     $columnMap = [];
@@ -117,8 +113,8 @@ try {
             $mother = isset($columnMap['mother']) ? trim($row[$columnMap['mother']]) : '';
             $mob = isset($columnMap['mob']) ? trim($row[$columnMap['mob']]) : '';
             $email = isset($columnMap['email']) ? trim($row[$columnMap['email']]) : '';
-            $bid = isset($columnMap['bid']) ? (int) $row[$columnMap['bid']] : 0;
-            $mcategory = isset($columnMap['mcategory']) ? (int) $row[$columnMap['mcategory']] : 0;
+            $bid = (int)$_POST['bid'];
+            $mcategory = (int)$_POST['mcategory'];
             $qualification = isset($columnMap['qualification']) ? trim($row[$columnMap['qualification']]) : '';
             $dob = isset($columnMap['dob']) ? trim($row[$columnMap['dob']]) : '';
             $gender = isset($columnMap['gender']) ? trim($row[$columnMap['gender']]) : '';
@@ -148,11 +144,8 @@ try {
             if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 throw new Exception('Invalid email format');
             }
-            if ($bid <= 0) {
-                throw new Exception('Valid branch ID is required');
-            }
-            if ($mcategory <= 0) {
-                throw new Exception('Valid category ID is required');
+            if (empty($qualification)) {
+                throw new Exception('Qualification is required');
             }
 
             // Validate branch exists

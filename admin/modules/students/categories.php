@@ -83,7 +83,7 @@ include('../../includes/header.php');
                             <select name="bid" class="form-select shadow-sm" onchange="this.form.submit()" style="min-width: 350px;">
                                 <?php foreach ($branches as $b): ?>
                                     <option value="<?php echo $b['id']; ?>" <?php echo $selected_bid == $b['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($b['bname']); ?> (<?php echo $b['cat_count']; ?>)
+                                        (<?php echo $b['cat_count']; ?>) <?php echo htmlspecialchars($b['bname']); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

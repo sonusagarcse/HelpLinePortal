@@ -52,6 +52,27 @@ include('../../includes/header.php');
                         <div id="alertContainer"></div>
 
                         <form id="uploadForm" enctype="multipart/form-data">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted mb-1">Select Branch *</label>
+                                    <select name="bid" id="bid" class="form-select shadow-sm" required>
+                                        <option value="">-- Select Branch --</option>
+                                        <?php
+                                        $branches = mysqli_query($con, "SELECT id, bname FROM branch WHERE status = 1 ORDER BY bname ASC");
+                                        while ($b = mysqli_fetch_assoc($branches)) {
+                                            echo "<option value='{$b['id']}'>{$b['bname']}</option>";
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted mb-1">Select Category *</label>
+                                    <select name="mcategory" id="mcategory" class="form-select shadow-sm" required disabled>
+                                        <option value="">-- Select Category --</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div class="mb-3">
                                 <label class="form-label">Select Excel File *</label>
                                 <input type="file" name="excel_file" id="excel_file" class="form-control"
@@ -126,8 +147,6 @@ include('../../includes/header.php');
                             <li>Student Name</li>
                             <li>Father Name</li>
                             <li>Mobile Number</li>
-                            <li>Branch ID</li>
-                            <li>Category ID</li>
                             <li>Qualification</li>
                             <li>Date of Birth (YYYY-MM-DD)</li>
                             <li>Gender (Male/Female/Other)</li>
@@ -153,6 +172,41 @@ include('../../includes/header.php');
 
 <script>
     $(document).ready(function () {
+        // Handle Branch Selection -> Fetch Categories
+        $('#bid').on('change', function() {
+            const bid = $(this).val();
+            const catSelect = $('#mcategory');
+            
+            if (!bid) {
+                catSelect.html('<option value="">-- Select Category --</option>').prop('disabled', true);
+                return;
+            }
+
+            // Show loading state
+            catSelect.html('<option value="">Loading categories...</option>').prop('disabled', true);
+
+            $.ajax({
+                url: 'ajax_get_categories.php',
+                type: 'GET',
+                data: { bid: bid },
+                success: function(response) {
+                    try {
+                        const categories = typeof response === 'string' ? JSON.parse(response) : response;
+                        let html = '<option value="">-- Select Category --</option>';
+                        categories.forEach(cat => {
+                            html += `<option value="${cat.id}">${cat.name}</option>`;
+                        });
+                        catSelect.html(html).prop('disabled', false);
+                    } catch (e) {
+                        catSelect.html('<option value="">Error loading categories</option>');
+                    }
+                },
+                error: function() {
+                    catSelect.html('<option value="">Error loading categories</option>');
+                }
+            });
+        });
+
         $('#uploadForm').on('submit', function (e) {
             e.preventDefault();
 

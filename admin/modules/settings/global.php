@@ -56,7 +56,12 @@ include('../../includes/header.php');
                             ?>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label"><?php echo ucwords(str_replace('_', ' ', $key)); ?></label>
-                                    <input type="text" name="settings[<?php echo $key; ?>]" class="form-control" value="<?php echo htmlspecialchars($value ?? ''); ?>">
+                                    <?php if ($key == 'whatsapp_msg'): ?>
+                                        <textarea name="settings[<?php echo $key; ?>]" class="form-control" rows="4"><?php echo htmlspecialchars($value ?? ''); ?></textarea>
+                                        <div class="form-text">This message will be sent to students via WhatsApp. You can use <code>[name]</code> to personalize the message.</div>
+                                    <?php else: ?>
+                                        <input type="text" name="settings[<?php echo $key; ?>]" class="form-control" value="<?php echo htmlspecialchars($value ?? ''); ?>">
+                                    <?php endif; ?>
                                 </div>
                             <?php endforeach; ?>
                         </div>

@@ -4,8 +4,12 @@ require_once(dirname(dirname(__DIR__)) . '/config/auth.php');
 
 $page_title = 'Students';
 
-// Fetch all active branches
-$branches_query = "SELECT id, bname FROM branch WHERE status = 1 ORDER BY bname ASC";
+// Fetch all active branches with student counts
+$branches_query = "SELECT b.id, b.bname, 
+                  (SELECT COUNT(*) FROM registration WHERE bid = b.id) as student_count 
+                  FROM branch b 
+                  WHERE b.status = 1 
+                  ORDER BY b.bname ASC";
 $branches_result = mysqli_query($con, $branches_query);
 $branches = [];
 while ($row = mysqli_fetch_assoc($branches_result)) {
@@ -16,12 +20,16 @@ while ($row = mysqli_fetch_assoc($branches_result)) {
 $selected_bid = isset($_GET['bid']) ? (int)$_GET['bid'] : 0;
 $selected_cid = isset($_GET['cid']) ? (int)$_GET['cid'] : 0;
 
-// Fetch categories for the selected branch
+// Fetch categories for the selected branch with student counts
 $categories = [];
 if ($selected_bid > 0) {
-    $cat_query = "SELECT id, name FROM member_category WHERE bid = ? ORDER BY name ASC";
+    $cat_query = "SELECT mc.id, mc.name, 
+                 (SELECT COUNT(*) FROM registration WHERE mcategory = mc.id AND bid = ?) as student_count 
+                 FROM member_category mc 
+                 WHERE mc.bid = ? 
+                 ORDER BY mc.name ASC";
     $cat_stmt = mysqli_prepare($con, $cat_query);
-    mysqli_stmt_bind_param($cat_stmt, "i", $selected_bid);
+    mysqli_stmt_bind_param($cat_stmt, "ii", $selected_bid, $selected_bid);
     mysqli_stmt_execute($cat_stmt);
     $cat_result = mysqli_stmt_get_result($cat_stmt);
     while ($row = mysqli_fetch_assoc($cat_result)) {
@@ -114,7 +122,7 @@ include('../../includes/header.php');
                                 <option value="0">-- Select Branch --</option>
                                 <?php foreach ($branches as $b): ?>
                                     <option value="<?php echo $b['id']; ?>" <?php echo $selected_bid == $b['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($b['bname']); ?>
+                                        (<?php echo $b['student_count']; ?>) <?php echo htmlspecialchars($b['bname']); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -126,7 +134,7 @@ include('../../includes/header.php');
                                 <option value="0">All Categories</option>
                                 <?php foreach ($categories as $c): ?>
                                     <option value="<?php echo $c['id']; ?>" <?php echo $selected_cid == $c['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($c['name']); ?>
+                                        (<?php echo $c['student_count']; ?>) <?php echo htmlspecialchars($c['name']); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

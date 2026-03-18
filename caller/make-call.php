@@ -272,11 +272,27 @@ endif; ?>
                                 <div>
                                     <strong class="fs-4 text-dark"><?php echo htmlspecialchars($student['mob']); ?></strong>
                                     <div class="mt-3">
-                                        <a href="tel:<?php echo htmlspecialchars($student['mob']); ?>"
-                                            class="btn btn-success btn-lg w-100 py-3 rounded-pill shadow d-flex align-items-center justify-content-center">
-                                            <i class="fas fa-phone-alt fa-shake me-3 fa-lg"></i>
-                                            <span class="fw-bold">START CALL NOW</span>
-                                        </a>
+                                        <div class="row g-2">
+                                            <div class="col-8">
+                                                <a href="tel:<?php echo htmlspecialchars($student['mob']); ?>"
+                                                    class="btn btn-success btn-lg w-100 py-3 rounded-pill shadow d-flex align-items-center justify-content-center">
+                                                    <i class="fas fa-phone-alt fa-shake me-3 fa-lg"></i>
+                                                    <span class="fw-bold">START CALL NOW</span>
+                                                </a>
+                                            </div>
+                                            <div class="col-4">
+                                                <?php
+    $wa_msg = $settings['whatsapp_msg'] ?? '';
+    $wa_msg = str_replace('[name]', $student['name'], $wa_msg);
+    $wa_url = "https://wa.me/91" . $student['mob'] . "?text=" . urlencode($wa_msg);
+?>
+                                                <a href="<?php echo $wa_url; ?>" target="_blank"
+                                                    class="btn btn-outline-success btn-lg w-100 py-3 rounded-pill shadow-sm d-flex align-items-center justify-content-center"
+                                                    style="border-color: #25D366; color: #25D366;">
+                                                    <i class="fab fa-whatsapp fa-lg"></i>
+                                                </a>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -474,7 +490,7 @@ if (!$history_found) {
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Mobile Number</label>
-                                <input type="text" name="mob" class="form-control" value="<?php echo htmlspecialchars($student['mob']); ?>" required>
+                                <input type="text" name="mob" class="form-control" disabled value="<?php echo htmlspecialchars($student['mob']); ?>" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Other Mobile</label>
