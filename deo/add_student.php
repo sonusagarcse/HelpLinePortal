@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_student'])) {
     $mob = mysqli_real_escape_string($con, $_POST['mob']);
     $name = mysqli_real_escape_string($con, $_POST['name']);
     $bid = $sticky_bid;
-    $mcategory = isset($_POST['mcategory']) ? (int)$_POST['mcategory'] : 0;
+    $mcategory = (int)$active_cid;
     
     // Form values & Defaults
     $father = isset($_POST['father']) ? mysqli_real_escape_string($con, $_POST['father']) : '';
@@ -52,8 +52,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_student'])) {
 // Branches
 $branches = mysqli_query($con, "SELECT id, bname FROM branch WHERE status = 1 ORDER BY bname");
 
-// Categories linked to active branch
-$categories = mysqli_query($con, "SELECT id, name FROM member_category WHERE (bid = $active_bid OR bid = 0) AND status = 1 ORDER BY name ASC");
+// Check if category is selected
+if ($active_cid == 0) {
+    header('Location: manage_branch.php?error=no_active_category');
+    exit;
+}
 
 include('includes/header.php');
 ?>
@@ -78,12 +81,25 @@ include('includes/header.php');
             <div class="col-lg-8">
                 
                 <div class="alert bg-white rounded-4 border-0 mb-4 shadow-sm d-flex align-items-center p-4">
-                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
-                        <i class="fas fa-building text-primary fa-lg"></i>
-                    </div>
-                    <div>
-                        <h6 class="mb-0 fw-bold">Active Branch: <?php echo htmlspecialchars($active_bname); ?></h6>
-                        <span class="text-muted small">All data will be linked to this branch. <a href="manage_branch.php" class="text-decoration-none">Change</a></span>
+                    <div class="row w-100 g-0">
+                        <div class="col-md-6 d-flex align-items-center mb-3 mb-md-0">
+                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                                <i class="fas fa-building text-primary fa-lg"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Active Branch: <?php echo htmlspecialchars($active_bname); ?></h6>
+                                <span class="text-muted small"><a href="manage_branch.php" class="text-decoration-none">Change Branch</a></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center border-start-md ps-md-4">
+                            <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+                                <i class="fas fa-tags text-success fa-lg"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Active Category: <?php echo htmlspecialchars($active_cname); ?></h6>
+                                <span class="text-muted small"><a href="manage_branch.php" class="text-decoration-none">Change Category</a></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -138,18 +154,6 @@ include('includes/header.php');
                                     </div>
                                 </div>
 
-                                <div class="col-md-6 mt-3 mt-md-4">
-                                    <label class="form-label fw-semibold text-secondary">Student Category <span class="text-danger">*</span></label>
-                                    <div class="input-group shadow-sm rounded-4 overflow-hidden border border-light">
-                                        <span class="input-group-text bg-light border-0 text-muted px-4"><i class="fas fa-tags"></i></span>
-                                        <select name="mcategory" class="form-select border-0 bg-light" required>
-                                            <option value="">Select Category</option>
-                                            <?php while($cat = mysqli_fetch_assoc($categories)): ?>
-                                                <option value="<?php echo $cat['id']; ?>"><?php echo htmlspecialchars($cat['name']); ?></option>
-                                            <?php endwhile; ?>
-                                        </select>
-                                    </div>
-                                </div>
                                 <div class="col-md-6 mt-3 mt-md-4">
                                     <label class="form-label fw-semibold text-secondary">Qualification (Optional)</label>
                                     <div class="input-group shadow-sm rounded-4 overflow-hidden border border-light">

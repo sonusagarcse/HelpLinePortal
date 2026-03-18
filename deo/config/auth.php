@@ -36,6 +36,26 @@ if (!isset($_SESSION['active_bid'])) {
 $active_bid = $_SESSION['active_bid'];
 $active_bname = $_SESSION['active_bname'];
 
+// Update active category from session or database
+if (!isset($_SESSION['active_cid'])) {
+    // Try to get first category for this branch if none selected
+    $c_query = "SELECT id, name FROM member_category WHERE (bid = ? OR bid = 0) AND status = 1 LIMIT 1";
+    $c_stmt = mysqli_prepare($con, $c_query);
+    mysqli_stmt_bind_param($c_stmt, "i", $active_bid);
+    mysqli_stmt_execute($c_stmt);
+    $c_res = mysqli_stmt_get_result($c_stmt)->fetch_assoc();
+    if ($c_res) {
+        $_SESSION['active_cid'] = $c_res['id'];
+        $_SESSION['active_cname'] = $c_res['name'];
+    } else {
+        $_SESSION['active_cid'] = 0;
+        $_SESSION['active_cname'] = 'None';
+    }
+}
+
+$active_cid = $_SESSION['active_cid'];
+$active_cname = $_SESSION['active_cname'];
+
 // Session timeout
 $timeout = 3600;
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout) {
