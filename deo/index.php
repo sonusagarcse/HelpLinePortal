@@ -62,7 +62,10 @@ include('includes/header.php');
                     <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill">
                         <i class="fas fa-building me-2"></i><?php echo htmlspecialchars($active_bname); ?>
                     </span>
-                    <p class="text-muted mb-0 ms-3">Here's your data entry performance overview</p>
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill ms-2">
+                        <i class="fas fa-tags me-2"></i><?php echo htmlspecialchars($active_cname); ?>
+                    </span>
+                    <p class="text-muted mb-0 ms-3 d-none d-md-block">Here's your data entry performance overview</p>
                 </div>
             </div>
             <div class="text-md-end">
