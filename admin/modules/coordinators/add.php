@@ -18,11 +18,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = mysqli_prepare($con, $query);
     mysqli_stmt_bind_param($stmt, "isssssis", $bid, $username, $name, $email, $mob, $pass, $status, $date);
 
-    if (mysqli_stmt_execute($stmt)) {
-        header('Location: list.php?success=added');
-        exit;
-    } else {
-        $error = 'Failed: ' . mysqli_error($con);
+    try {
+        if (mysqli_stmt_execute($stmt)) {
+            header('Location: list.php?success=added');
+            exit;
+        } else {
+            $error = 'Failed: ' . mysqli_error($con);
+        }
+    } catch (Exception $e) {
+        $error = 'Failed: This Username or Email might already be registered to another Coordinator. Please try a different one.';
     }
 }
 
