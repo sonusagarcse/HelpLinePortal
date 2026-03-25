@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $address = mysqli_real_escape_string($con, $_POST['address']);
     $svid = mysqli_real_escape_string($con, $_POST['svid']);
     $bid = mysqli_real_escape_string($con, $_POST['bid']);
+    $earning_per_admission = isset($_POST['earning_per_admission']) ? (float)$_POST['earning_per_admission'] : 0.00;
     $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
     $status = isset($_POST['status']) ? 1 : 0;
     $date = date('d-m-Y');
@@ -35,10 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $calling_assignments = isset($_POST['calling_assignments']) ? $_POST['calling_assignments'] : [];
 
     // Insert caller
-    $query = "INSERT INTO caller (svid, regno, name, father, mother, dob, age, doj, gender, email, mob, state, dis, pincode, category, marital_status, qualification, aadhar, othermob_no, pass, address, bid, status, date) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $query = "INSERT INTO caller (svid, regno, name, father, mother, dob, age, doj, gender, email, mob, state, dis, pincode, category, marital_status, qualification, aadhar, othermob_no, pass, address, bid, earning_per_admission, status, date) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = mysqli_prepare($con, $query);
-    mysqli_stmt_bind_param($stmt, "isssssissssssssssssssiis", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bid, $status, $date);
+    mysqli_stmt_bind_param($stmt, "isssssissssssssssssssidis", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bid, $earning_per_admission, $status, $date);
 
     if (mysqli_stmt_execute($stmt)) {
         $caller_id = mysqli_insert_id($con);
@@ -428,6 +429,10 @@ include('../../includes/header.php');
                         <div class="col-md-6">
                             <label class="form-label">Confirm Password *</label>
                             <input type="password" class="form-control" id="confirm_password" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Earning Per Admission (₹)</label>
+                            <input type="number" step="0.01" name="earning_per_admission" class="form-control" value="0.00" required>
                         </div>
                         <div class="col-md-12">
                             <div class="form-check">

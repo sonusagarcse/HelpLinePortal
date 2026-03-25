@@ -79,6 +79,7 @@
                                     <li><a href="<?php echo $SITE_URL; ?>/branch_login">Branch</a></li>
                                     <li><a href="<?php echo $SITE_URL; ?>/caller_login">Caller</a></li>
                                     <li><a href="<?php echo $SITE_URL; ?>/deo_login">DEO</a></li>
+                                    <li><a href="<?php echo $SITE_URL; ?>/coordinator_login">Centre Coordinator</a></li>
                                     <li><a href="<?php echo $SITE_URL; ?>/supervisor_login">Supervisor</a></li>
                                     <li><a href="<?php echo $SITE_URL; ?>/manager_login">Manager</a></li>
                                  </ul>

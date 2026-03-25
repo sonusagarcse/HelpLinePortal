@@ -51,6 +51,8 @@ $admin_base = $protocol . '://' . $host . $base_dir . '/admin/';
                         Supervisors</a></li>
                 <li><a href="<?php echo $admin_base; ?>modules/callers/list.php"><i class="fas fa-headset"></i>
                         Callers</a></li>
+                <li><a href="<?php echo $admin_base; ?>modules/coordinators/list.php"><i class="fas fa-sitemap"></i>
+                        Coordinators</a></li>
                 <li><a href="<?php echo $admin_base; ?>modules/deos/list.php"><i class="fas fa-keyboard"></i>
                         DEOs</a></li>
             </ul>
@@ -182,6 +184,12 @@ $admin_base = $protocol . '://' . $host . $base_dir . '/admin/';
                 <li><a href="<?php echo $admin_base; ?>modules/services/list.php"><i class="fas fa-concierge-bell"></i>
                         Our Services</a></li>
             </ul>
+        </li>
+
+        <li>
+            <a href="<?php echo $admin_base; ?>modules/approvals/list.php" class="<?php echo basename(dirname($_SERVER['PHP_SELF'])) == 'approvals' ? 'active' : ''; ?>">
+                <i class="fas fa-check-double"></i> Approval Manager
+            </a>
         </li>
 
         <li>

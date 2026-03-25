@@ -48,6 +48,11 @@ $stats['pending'] = mysqli_fetch_assoc($result)['total'];
 $result = mysqli_query($con, "SELECT COUNT(*) as total FROM mquery WHERE callerid = $caller_id AND DATE(date) = CURDATE()");
 $stats['today'] = mysqli_fetch_assoc($result)['total'];
 
+// Total Earnings (from Coordinator Approvals)
+$earnings_query = "SELECT SUM(amount) as total_earnings FROM caller_earnings WHERE caller_id = $caller_id";
+$earnings_result = mysqli_query($con, $earnings_query);
+$stats['earnings'] = mysqli_fetch_assoc($earnings_result)['total_earnings'] ?? 0;
+
 // Get assigned data (The main loop)
 $query = "SELECT r.*, r.id as student_id, r.regno as student_regno, r.name as student_name, 
                  r.father as student_father, r.mob as student_mob, r.email as student_email, 
@@ -364,8 +369,11 @@ $followup_count = count($todays_followups);
                         <h2 class="h4 mb-1">Welcome back, <span class="text-primary"><?php echo $caller_name; ?></span>!</h2>
                         <p class="text-muted small mb-0">Here's what's happening with your students today.</p>
                     </div>
-                    <div class="d-none d-lg-block">
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
+                    <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 px-lg-3 py-2 rounded-pill fs-6 shadow-sm w-100 w-lg-auto d-flex justify-content-center">
+                            <i class="fas fa-wallet me-2"></i>Total Earnings: ₹<?php echo number_format($stats['earnings'], 2); ?>
+                        </span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill shadow-sm d-none d-md-inline-block">
                             <i class="fas fa-calendar-alt me-2"></i><?php echo date('M d, Y'); ?>
                         </span>
                     </div>

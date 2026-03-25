@@ -136,17 +136,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (mysqli_stmt_execute($insert_stmt)) {
         // Update registration tracking caller_remark
         $reg_update_sql = "caller_remark = ?";
+
+        // If status is 0 (Resolved) and not rejected, it's pending coordinator approval
+        if ($status == 0 && !$is_rejected) {
+            $reg_update_sql .= ", coordinator_approval_status = 1";
+        }
+
         if ($is_rejected) {
             $reg_update_sql .= ", status = 0";
         }
         $update_query = "UPDATE registration SET $reg_update_sql WHERE id = ?";
         $update_stmt = mysqli_prepare($con, $update_query);
-        if ($is_rejected) {
-            mysqli_stmt_bind_param($update_stmt, "si", $remarks, $student_id);
-        }
-        else {
-            mysqli_stmt_bind_param($update_stmt, "si", $remarks, $student_id);
-        }
+        mysqli_stmt_bind_param($update_stmt, "si", $remarks, $student_id);
+
         mysqli_stmt_execute($update_stmt);
 
         header('Location: index.php?success=call_logged' . ($is_rejected ? '&rejected=1' : ''));
@@ -353,28 +355,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </button>
                     </div>
 
-                    <?php 
-                    $addr_parts = [];
-                    if ($student): 
-                        // Define address parts for the redesign
-                        $addr_parts = array_filter([
-                            $student['address'] ?? '',
-                            $student['village'] ?? '',
-                            $student['dis'] ?? '',
-                            $student['state'] ?? '',
-                            $student['pincode'] ?? ''
-                        ]);
+                    <?php
+$addr_parts = [];
+if ($student):
+    // Define address parts for the redesign
+    $addr_parts = array_filter([
+        $student['address'] ?? '',
+        $student['village'] ?? '',
+        $student['dis'] ?? '',
+        $student['state'] ?? '',
+        $student['pincode'] ?? ''
+    ]);
 
-                        // Re-fetch settings for whatsapp message if not already available
-                        $set_res = mysqli_query($con, "SELECT whatsapp_msg FROM global_setting WHERE id = 1");
-                        $settings = mysqli_fetch_assoc($set_res);
-                        $wa_msg = $settings['whatsapp_msg'] ?? '';
-                        $wa_msg = str_replace('[name]', $student['name'], $wa_msg);
-                        $wa_url = "https://wa.me/91" . $student['mob'] . "?text=" . urlencode($wa_msg);
-                    endif;
-                    
-                    if ($student):
-                    ?>
+    // Re-fetch settings for whatsapp message if not already available
+    $set_res = mysqli_query($con, "SELECT whatsapp_msg FROM global_setting WHERE id = 1");
+    $settings = mysqli_fetch_assoc($set_res);
+    $wa_msg = $settings['whatsapp_msg'] ?? '';
+    $wa_msg = str_replace('[name]', $student['name'], $wa_msg);
+    $wa_url = "https://wa.me/91" . $student['mob'] . "?text=" . urlencode($wa_msg);
+endif;
+
+if ($student):
+?>
                         <div class="row g-4">
                             <div class="col-md-12">
                                 <div class="bg-primary bg-opacity-10 p-4 rounded-4 border border-primary border-opacity-10 mb-2 text-center">
@@ -429,7 +431,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                             </div>
                         </div>
-                    <?php endif; ?>
+                    <?php
+endif; ?>
                 </div>
 
                 <div class="premium-card">
@@ -439,15 +442,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    
                     <div class="timeline">
                         <?php
-                        $history_query = "SELECT * FROM mquery WHERE studentid = ? ORDER BY id DESC";
-                        $h_stmt = mysqli_prepare($con, $history_query);
-                        mysqli_stmt_bind_param($h_stmt, "i", $student_id);
-                        mysqli_stmt_execute($h_stmt);
-                        $h_result = mysqli_stmt_get_result($h_stmt);
-                        $history_found = false;
-                        while ($h = mysqli_fetch_assoc($h_result)):
-                            $history_found = true;
-                        ?>
+$history_query = "SELECT * FROM mquery WHERE studentid = ? ORDER BY id DESC";
+$h_stmt = mysqli_prepare($con, $history_query);
+mysqli_stmt_bind_param($h_stmt, "i", $student_id);
+mysqli_stmt_execute($h_stmt);
+$h_result = mysqli_stmt_get_result($h_stmt);
+$history_found = false;
+while ($h = mysqli_fetch_assoc($h_result)):
+    $history_found = true;
+?>
                             <div class="timeline-item">
                                 <div class="timeline-marker"></div>
                                 <div class="timeline-content shadow-sm">
@@ -457,26 +460,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         </span>
                                         <?php if ($h['status'] == 0): ?>
                                             <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Completed</span>
-                                        <?php else: ?>
+                                        <?php
+    else: ?>
                                             <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill">Follow-up</span>
-                                        <?php endif; ?>
+                                        <?php
+    endif; ?>
                                     </div>
                                     <p class="mb-2 fw-semibold text-dark"><?php echo htmlspecialchars($h['des']); ?></p>
                                     <div class="pt-2 mt-2 border-top small text-muted">
                                         <i class="far fa-comment-dots me-2"></i><strong>Remark:</strong> <?php echo htmlspecialchars($h['remarks']); ?>
-                                        <?php if($h['nextdate']): ?>
+                                        <?php if ($h['nextdate']): ?>
                                             <span class="ms-3"><i class="far fa-calendar-alt me-2"></i><strong>Next:</strong> <?php echo $h['nextdate']; ?></span>
-                                        <?php endif; ?>
+                                        <?php
+    endif; ?>
                                     </div>
                                 </div>
                             </div>
-                        <?php endwhile; ?>
+                        <?php
+endwhile; ?>
                         <?php if (!$history_found): ?>
                             <div class="text-center py-5 text-muted">
                                 <i class="fas fa-comment-slash fa-3x mb-3 opacity-25"></i>
                                 <p>No previous call interactions recorded for this student.</p>
                             </div>
-                        <?php endif; ?>
+                        <?php
+endif; ?>
                     </div>
                 </div>
             </div>
@@ -530,7 +538,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             <div class="form-check form-switch mb-3">
                                 <input class="form-check-input" type="checkbox" role="switch" name="status" id="completed">
-                                <label class="form-check-label fw-semibold" for="completed">Mark interaction as Resolved</label>
+                                <label class="form-check-label fw-semibold" for="completed">Admission Confirmed</label>
                             </div>
 
                             <hr class="my-3 opacity-10">

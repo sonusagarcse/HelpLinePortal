@@ -14,10 +14,12 @@ $stats['completed_today'] = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(
 $stats['completed_month'] = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND status = 0 AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())"))['total'];
 
 // Get full list
-$query = "SELECT m.*, r.name as student_name, r.regno as student_regno, r.mob as student_mob, b.bname 
+$query = "SELECT m.*, r.name as student_name, r.regno as student_regno, r.mob as student_mob, 
+                 r.coordinator_approval_status, b.bname, ce.amount as earned_amount 
           FROM mquery m 
           JOIN registration r ON m.studentid = r.id 
           LEFT JOIN branch b ON r.bid = b.id 
+          LEFT JOIN caller_earnings ce ON r.id = ce.student_id AND ce.caller_id = $caller_id
           WHERE m.callerid = $caller_id AND m.status = 0 
           ORDER BY m.id DESC";
 $result = mysqli_query($con, $query);
@@ -102,7 +104,8 @@ $completed_calls = mysqli_fetch_all($result, MYSQLI_ASSOC);
                             <th>Student</th>
                             <th>Mobile</th>
                             <th>Branch</th>
-                            <th>Remark</th>
+                            <th>Approval Status</th>
+                            <th>Earnings</th>
                             <th>Date</th>
                             <th>Action</th>
                         </tr>
@@ -114,7 +117,28 @@ $completed_calls = mysqli_fetch_all($result, MYSQLI_ASSOC);
                                 <td><strong><?php echo htmlspecialchars($call['student_name'] ?? 'N/A'); ?></strong></td>
                                 <td><?php echo htmlspecialchars($call['student_mob'] ?? 'N/A'); ?></td>
                                 <td><?php echo htmlspecialchars($call['bname'] ?? 'N/A'); ?></td>
-                                <td><?php echo htmlspecialchars($call['des'] ?? 'N/A'); ?></td>
+                                <td>
+                                    <?php 
+                                    if($call['coordinator_approval_status'] == 1) {
+                                        echo '<span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>';
+                                    } elseif($call['coordinator_approval_status'] == 2) {
+                                        echo '<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Approved</span>';
+                                    } elseif($call['coordinator_approval_status'] == 3) {
+                                        echo '<span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>Rejected</span>';
+                                    } else {
+                                        echo '<span class="badge bg-secondary">Not Needed</span>';
+                                    }
+                                    ?>
+                                </td>
+                                <td>
+                                    <?php 
+                                    if($call['coordinator_approval_status'] == 2 && $call['earned_amount']) {
+                                        echo '<span class="text-success fw-bold">+₹' . number_format($call['earned_amount'], 2) . '</span>';
+                                    } else {
+                                        echo '<span class="text-muted">-</span>';
+                                    }
+                                    ?>
+                                </td>
                                 <td><?php echo date('d M Y', strtotime($call['date'])); ?></td>
                                 <td>
                                     <a href="make-call.php?id=<?php echo $call['studentid']; ?>" class="btn btn-sm btn-outline-primary">

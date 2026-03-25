@@ -56,7 +56,7 @@ include('../../includes/header.php');
                                 <p class="mb-0">Branch-wise statistics</p>
                             </div>
                         </div>
-                        <a href="branch-report.php" class="btn btn-sm btn-primary mt-3 w-100">
+                        <a href="custom-report.php?type=branch" class="btn btn-sm btn-primary mt-3 w-100">
                             <i class="fas fa-file-pdf me-2"></i>Generate Report
                         </a>
                     </div>
@@ -73,7 +73,7 @@ include('../../includes/header.php');
                                 <p class="mb-0">Registration statistics</p>
                             </div>
                         </div>
-                        <a href="student-report.php" class="btn btn-sm btn-primary mt-3 w-100">
+                        <a href="custom-report.php?type=student" class="btn btn-sm btn-primary mt-3 w-100">
                             <i class="fas fa-file-pdf me-2"></i>Generate Report
                         </a>
                     </div>
@@ -90,7 +90,7 @@ include('../../includes/header.php');
                                 <p class="mb-0">Enrollment statistics</p>
                             </div>
                         </div>
-                        <a href="course-report.php" class="btn btn-sm btn-primary mt-3 w-100">
+                        <a href="custom-report.php?type=course" class="btn btn-sm btn-primary mt-3 w-100">
                             <i class="fas fa-file-pdf me-2"></i>Generate Report
                         </a>
                     </div>
@@ -107,7 +107,7 @@ include('../../includes/header.php');
                                 <p class="mb-0">Financial statistics</p>
                             </div>
                         </div>
-                        <a href="revenue-report.php" class="btn btn-sm btn-primary mt-3 w-100">
+                        <a href="custom-report.php?type=revenue" class="btn btn-sm btn-primary mt-3 w-100">
                             <i class="fas fa-file-pdf me-2"></i>Generate Report
                         </a>
                     </div>
@@ -124,7 +124,7 @@ include('../../includes/header.php');
                                 <p class="mb-0">Call tracking report</p>
                             </div>
                         </div>
-                        <a href="caller-report.php" class="btn btn-sm btn-primary mt-3 w-100">
+                        <a href="custom-report.php?type=caller" class="btn btn-sm btn-primary mt-3 w-100">
                             <i class="fas fa-file-pdf me-2"></i>Generate Report
                         </a>
                     </div>
@@ -141,7 +141,7 @@ include('../../includes/header.php');
                                 <p class="mb-0">Communication statistics</p>
                             </div>
                         </div>
-                        <a href="query-report.php" class="btn btn-sm btn-primary mt-3 w-100">
+                        <a href="custom-report.php?type=query" class="btn btn-sm btn-primary mt-3 w-100">
                             <i class="fas fa-file-pdf me-2"></i>Generate Report
                         </a>
                     </div>

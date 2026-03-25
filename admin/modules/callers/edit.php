@@ -52,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $address = mysqli_real_escape_string($con, $_POST['address']);
     $svid = mysqli_real_escape_string($con, $_POST['svid']);
     $bid = mysqli_real_escape_string($con, $_POST['bid']);
+    $earning_per_admission = isset($_POST['earning_per_admission']) ? (float)$_POST['earning_per_admission'] : 0.00;
     $status = isset($_POST['status']) ? 1 : 0;
 
     // Get selected branches and categories for calling
@@ -60,13 +61,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Update password only if provided
     if (!empty($_POST['pass'])) {
         $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
-        $update_query = "UPDATE caller SET svid=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, pass=?, address=?, bid=?, status=? WHERE id=?";
+        $update_query = "UPDATE caller SET svid=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, pass=?, address=?, bid=?, earning_per_admission=?, status=? WHERE id=?";
         $update_stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($update_stmt, "isssssissssssssssssssiii", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bid, $status, $id);
+        mysqli_stmt_bind_param($update_stmt, "isssssissssssssssssssidii", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bid, $earning_per_admission, $status, $id);
     } else {
-        $update_query = "UPDATE caller SET svid=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, address=?, bid=?, status=? WHERE id=?";
+        $update_query = "UPDATE caller SET svid=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, address=?, bid=?, earning_per_admission=?, status=? WHERE id=?";
         $update_stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($update_stmt, "isssssisssssssssssssiii", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $address, $bid, $status, $id);
+        mysqli_stmt_bind_param($update_stmt, "isssssisssssssssssssidii", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $address, $bid, $earning_per_admission, $status, $id);
     }
 
     if (mysqli_stmt_execute($update_stmt)) {
@@ -478,6 +479,10 @@ include('../../includes/header.php');
                         <div class="col-md-6">
                             <label class="form-label">Confirm New Password</label>
                             <input type="password" class="form-control" id="confirm_password">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Earning Per Admission (₹)</label>
+                            <input type="number" step="0.01" name="earning_per_admission" class="form-control" value="<?php echo htmlspecialchars($caller['earning_per_admission'] ?? '0.00'); ?>" required>
                         </div>
                         <div class="col-md-12">
                             <div class="form-check">
