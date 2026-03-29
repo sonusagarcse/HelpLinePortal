@@ -15,6 +15,6 @@ unset($_SESSION['supervisor_bid']);
 unset($_SESSION['supervisor_regno']);
 
 session_destroy();
-header('Location: ' . (isset($SITE_URL) ? $SITE_URL : '') . '/supervisor_login.php');
+header('Location: ../supervisor_login.php');
 exit;
 ?>

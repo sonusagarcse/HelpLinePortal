@@ -22,17 +22,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (mysqli_stmt_execute($stmt)) {
             header('Location: list.php?success=added');
             exit;
-        } else {
+        }
+        else {
             $error = 'Failed: ' . mysqli_error($con);
         }
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
         $error = 'Failed: This Username or Email might already be registered to another Coordinator. Please try a different one.';
     }
 }
 
 $branches = [];
 $res = mysqli_query($con, "SELECT id, bname, bcode FROM branch WHERE status=1 ORDER BY bname");
-while($r = mysqli_fetch_assoc($res)) $branches[] = $r;
+while ($r = mysqli_fetch_assoc($res))
+    $branches[] = $r;
 
 include('../../includes/header.php');
 ?>
@@ -59,7 +62,8 @@ include('../../includes/header.php');
                 </nav>
             </div>
             <div class="table-card">
-                <?php if(isset($error)): ?><div class="alert alert-danger"><?php echo $error; ?></div><?php endif; ?>
+                <?php if (isset($error)): ?><div class="alert alert-danger"><?php echo $error; ?></div><?php
+endif; ?>
                 <form method="POST">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -82,9 +86,10 @@ include('../../includes/header.php');
                             <label>Branch</label>
                             <select name="bid" class="form-control" required>
                                 <option value="">Select Branch</option>
-                                <?php foreach($branches as $b): ?>
-                                    <option value="<?php echo $b['id']; ?>"><?php echo $b['bcode'].' - '.$b['bname']; ?></option>
-                                <?php endforeach; ?>
+                                <?php foreach ($branches as $b): ?>
+                                    <option value="<?php echo $b['id']; ?>"><?php echo $b['bcode'] . ' - ' . $b['bname']; ?></option>
+                                <?php
+endforeach; ?>
                             </select>
                         </div>
                         <div class="col-md-6">

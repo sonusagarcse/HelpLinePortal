@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__ . '/../connection.php');
 session_start();
 
 // Check if caller is logged in
@@ -7,8 +8,6 @@ if (!isset($_SESSION['caller_id'])) {
     header('Location: ' . $redirect_url);
     exit;
 }
-
-require_once(__DIR__ . '/../connection.php');
 
 // Get student ID (could come as id or student_id depending on link origin)
 $student_id = isset($_GET['id']) ? (int)$_GET['id'] : (isset($_GET['student_id']) ? (int)$_GET['student_id'] : 0);
@@ -107,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = mysqli_real_escape_string($con, $_POST['description']);
     $remarks = mysqli_real_escape_string($con, $_POST['remarks']);
     $next_date = mysqli_real_escape_string($con, $_POST['next_date']);
-    $status = isset($_POST['status']) ? 0 : 1; // 0 = completed, 1 = pending
+    $status = (isset($_POST['status']) || isset($_POST['reg_ready'])) ? 0 : 1; // 0 = completed, 1 = pending
     $is_rejected = isset($_POST['reject_student']) ? true : false;
 
     if ($is_rejected) {
@@ -134,8 +133,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     );
 
     if (mysqli_stmt_execute($insert_stmt)) {
-        // Update registration tracking caller_remark
-        $reg_update_sql = "caller_remark = ?";
+        // Update registration tracking caller_remark and assignment
+        $reg_update_sql = "caller_remark = ?, assigned_caller = ?";
+        $params = [$remarks, $caller_id];
+        $types = "si";
+
+        // Handle Status and Special Workflow
+        if (isset($_POST['reg_ready'])) {
+            $reg_update_sql .= ", reg_status = 1";
+        }
 
         // If status is 0 (Resolved) and not rejected, it's pending coordinator approval
         if ($status == 0 && !$is_rejected) {
@@ -145,9 +151,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($is_rejected) {
             $reg_update_sql .= ", status = 0";
         }
-        $update_query = "UPDATE registration SET $reg_update_sql WHERE id = ?";
+        
+        $reg_update_sql .= " WHERE id = ?";
+        $params[] = $student_id;
+        $types .= "i";
+
+        $update_query = "UPDATE registration SET $reg_update_sql";
         $update_stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($update_stmt, "si", $remarks, $student_id);
+        mysqli_stmt_bind_param($update_stmt, $types, ...$params);
 
         mysqli_stmt_execute($update_stmt);
 
@@ -536,6 +547,14 @@ endif; ?>
                                 </div>
                             </div>
                             
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" role="switch" name="reg_ready" id="reg_ready">
+                                <label class="form-check-label fw-semibold text-primary" for="reg_ready">
+                                    <i class="fas fa-id-card me-1"></i> Ready for Registration
+                                </label>
+                                <div class="small text-muted ms-1" style="font-size: 0.7rem;">Sends to Supervisor for credentials</div>
+                            </div>
+
                             <div class="form-check form-switch mb-3">
                                 <input class="form-check-input" type="checkbox" role="switch" name="status" id="completed">
                                 <label class="form-check-label fw-semibold" for="completed">Admission Confirmed</label>

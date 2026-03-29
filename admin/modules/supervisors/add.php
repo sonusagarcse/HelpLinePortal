@@ -25,7 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $aadhar = mysqli_real_escape_string($con, $_POST['aadhar']);
     $othermob_no = mysqli_real_escape_string($con, $_POST['othermob_no']);
     $address = mysqli_real_escape_string($con, $_POST['address']);
-    $bid = mysqli_real_escape_string($con, $_POST['bid']);
+    // Removed single bid, getting array of bids
+    $bids = isset($_POST['bids']) && is_array($_POST['bids']) ? $_POST['bids'] : [];
     $mnid = mysqli_real_escape_string($con, $_POST['mnid']); // Manager ID
     $username = mysqli_real_escape_string($con, $_POST['username']);
     $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
@@ -37,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accountno = mysqli_real_escape_string($con, $_POST['accountno']);
 
     $status = isset($_POST['status']) ? 1 : 0;
-    $date = date('d-m-Y');
+    $date = date('Y-m-d');
     $asession = date('Y');
 
     // Check for duplicate registration number
@@ -50,7 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (mysqli_num_rows($check_result) > 0) {
         $error = 'Registration number already exists!';
     } else {
-        // Insert supervisor
+        // Insert supervisor (setting legacy bid to 0)
+        $legacy_bid = 0;
         $query = "INSERT INTO supervisor (mnid, username, regno, name, father, mother, asession, dob, age, doj, gender, email, mob, state, dis, pincode, category, marital_status, qualification, aadhar, othermob_no, pass, address, bank, bank_branch, ifsccode, accountno, bid, status, date, reg_type) 
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
         $stmt = mysqli_prepare($con, $query);
@@ -84,13 +86,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $bank_branch,
             $ifsccode,
             $accountno,
-            $bid,
+            $legacy_bid,
             $status,
             $date
         );
 
         if (mysqli_stmt_execute($stmt)) {
             $supervisor_id = mysqli_insert_id($con);
+            
+            // Insert multiple branches into supervisor_branches table
+            if (!empty($bids)) {
+                $b_query = "INSERT INTO supervisor_branches (supervisor_id, branch_id, assigned_date, status) VALUES (?, ?, ?, 1)";
+                $b_stmt = mysqli_prepare($con, $b_query);
+                foreach ($bids as $branch_id) {
+                    $branch_id = (int)$branch_id;
+                    mysqli_stmt_bind_param($b_stmt, "iis", $supervisor_id, $branch_id, $date);
+                    mysqli_stmt_execute($b_stmt);
+                }
+            }
+            
             logActivity('create_supervisor', 'supervisor', $supervisor_id, null, json_encode($_POST));
             header('Location: list.php?success=added');
             exit;
@@ -326,15 +340,15 @@ include('../../includes/header.php');
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Assigned Branch *</label>
-                            <select name="bid" class="form-select" required>
-                                <option value="">Select Branch</option>
+                            <label class="form-label">Assigned Branches *</label>
+                            <select name="bids[]" class="form-select" multiple required style="height: 120px;">
                                 <?php foreach ($branches as $branch): ?>
                                     <option value="<?php echo $branch['id']; ?>">
                                         <?php echo htmlspecialchars($branch['bname']) . ' (' . htmlspecialchars($branch['bcode']) . ')'; ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <small class="text-muted">Hold CTRL (or CMD on Mac) to select multiple branches.</small>
                         </div>
 
                         <!-- Bank Details -->

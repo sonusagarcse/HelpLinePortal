@@ -14,14 +14,16 @@ if ($caller_id <= 0) {
 }
 
 // Fetch Students that are NOT already explicitly assigned to this caller
-// We allow cross-branch assignment as requested.
-// To keep the list manageable, we show unassigned students (assigned_caller = 0)
+// We restrict assignment to the supervisor's branch
+$supervisor_bid = $_SESSION['supervisor_bid'] ?? 0;
+$branch_filter = ($supervisor_bid > 0) ? " AND r.bid = " . (int)$supervisor_bid : "";
+
 $students_query = "SELECT r.id, r.regno, r.name, r.father, r.mob, r.bid, r.mcategory, 
                    b.bname, mc.name as category_name
                    FROM registration r
                    LEFT JOIN branch b ON r.bid = b.id
                    LEFT JOIN member_category mc ON r.mcategory = mc.id
-                   WHERE r.assigned_caller = 0 AND r.status = 1
+                   WHERE r.assigned_caller = 0 AND r.status = 1 $branch_filter
                    ORDER BY r.id DESC LIMIT 300";
 
 $result = mysqli_query($con, $students_query);

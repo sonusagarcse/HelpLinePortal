@@ -1,9 +1,9 @@
 <?php
-include("../connection.php");
+require_once(__DIR__ . '/../connection.php');
 session_start();
 
 if (!isset($_SESSION['caller_id'])) {
-    header("location:../index.php");
+    header('Location: ' . (isset($SITE_URL) ? $SITE_URL : '') . '/caller_login.php');
     exit();
 }
 
@@ -13,14 +13,21 @@ $caller_id = $_SESSION['caller_id'];
 $stats['completed_today'] = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND status = 0 AND DATE(date) = CURDATE()"))['total'];
 $stats['completed_month'] = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND status = 0 AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())"))['total'];
 
-// Get full list
+// Get full list (Group by studentid to avoid duplicates if multiple calls were marked completed)
 $query = "SELECT m.*, r.name as student_name, r.regno as student_regno, r.mob as student_mob, 
-                 r.coordinator_approval_status, b.bname, ce.amount as earned_amount 
+                 r.coordinator_approval_status, r.reg_status, b.bname, ce.amount as earned_amount 
           FROM mquery m 
           JOIN registration r ON m.studentid = r.id 
           LEFT JOIN branch b ON r.bid = b.id 
           LEFT JOIN caller_earnings ce ON r.id = ce.student_id AND ce.caller_id = $caller_id
           WHERE m.callerid = $caller_id AND m.status = 0 
+          AND m.id IN (
+              SELECT MAX(mq.id) 
+              FROM mquery mq 
+              JOIN registration reg ON mq.studentid = reg.id 
+              WHERE mq.callerid = $caller_id AND mq.status = 0 
+              GROUP BY reg.mob
+          )
           ORDER BY m.id DESC";
 $result = mysqli_query($con, $query);
 $completed_calls = mysqli_fetch_all($result, MYSQLI_ASSOC);
@@ -119,14 +126,18 @@ $completed_calls = mysqli_fetch_all($result, MYSQLI_ASSOC);
                                 <td><?php echo htmlspecialchars($call['bname'] ?? 'N/A'); ?></td>
                                 <td>
                                     <?php 
-                                    if($call['coordinator_approval_status'] == 1) {
-                                        echo '<span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>';
-                                    } elseif($call['coordinator_approval_status'] == 2) {
-                                        echo '<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Approved</span>';
-                                    } elseif($call['coordinator_approval_status'] == 3) {
-                                        echo '<span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>Rejected</span>';
+                                    if ($call['coordinator_approval_status'] == 2) {
+                                        echo '<span class="badge bg-success shadow-sm rounded-pill px-3 py-2"><i class="fas fa-check-double me-1"></i>Admission Approved</span>';
+                                    } elseif ($call['coordinator_approval_status'] == 3) {
+                                        echo '<span class="badge bg-danger shadow-sm rounded-pill px-3 py-2"><i class="fas fa-times-circle me-1"></i>Rejected</span>';
+                                    } elseif ($call['reg_status'] == 2) {
+                                        echo '<span class="badge bg-info text-white shadow-sm rounded-pill px-3 py-2"><i class="fas fa-user-check me-1"></i>Reg. Done (Awaiting Coord)</span>';
+                                    } elseif ($call['reg_status'] == 1) {
+                                        echo '<span class="badge bg-primary shadow-sm rounded-pill px-3 py-2"><i class="fas fa-paper-plane me-1"></i>Sent to Supervisor</span>';
+                                    } elseif ($call['status'] == 0) {
+                                        echo '<span class="badge bg-secondary shadow-sm rounded-pill px-3 py-2"><i class="fas fa-check me-1"></i>Call Completed</span>';
                                     } else {
-                                        echo '<span class="badge bg-secondary">Not Needed</span>';
+                                        echo '<span class="badge bg-light text-muted rounded-pill px-3 py-2">Unknown</span>';
                                     }
                                     ?>
                                 </td>

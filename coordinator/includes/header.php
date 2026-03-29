@@ -3,49 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($page_title) ? $page_title . ' - Coordinator Panel' : 'Coordinator Panel'; ?></title>
+    <title><?php echo isset($page_title) ? $page_title . ' - Coordinator' : 'Coordinator Hub'; ?></title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <!-- DataTables -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            --secondary-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --sidebar-width: 260px;
-            --glass-bg: rgba(255, 255, 255, 0.95);
+            --primary-indigo: #4a6cf7;
+            --dark-indigo: #334ab2;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-700: #334155;
+            --slate-900: #0f172a;
+            --sidebar-width: 280px;
+            --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f4f7f6;
-            background-image: radial-gradient(rgba(30, 60, 114, 0.05) 1px, transparent 1px);
-            background-size: 20px 20px;
+            background-color: #fafbfc;
+            color: var(--slate-700);
             overflow-x: hidden;
             min-height: 100vh;
         }
 
         h1, h2, h3, h4, .fw-bold {
             font-family: 'Outfit', sans-serif;
-            font-weight: 600;
+            color: var(--slate-900);
+            letter-spacing: -0.025em;
         }
 
-        /* Sidebar Styling */
+        /* Minimal Sidebar (SaaS Style) */
         #sidebar {
             width: var(--sidebar-width);
-            background: var(--primary-gradient);
-            color: #fff;
+            background: #ffffff;
+            color: var(--slate-700);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             min-height: 100vh;
             position: fixed;
             left: 0;
             top: 0;
             z-index: 1050;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            border-right: 1px solid var(--slate-200);
         }
 
         #sidebar.active {
@@ -53,43 +59,65 @@
         }
 
         #sidebar .sidebar-header {
-            padding: 30px 25px;
-            background: rgba(0, 0, 0, 0.2);
+            padding: 30px 24px;
+            display: flex;
+            align-items: center;
+        }
+
+        #sidebar .sidebar-header h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0;
+            color: var(--primary-indigo);
+            font-weight: 700;
         }
 
         #sidebar ul.components {
-            padding: 15px 0;
+            padding: 10px 16px;
+        }
+
+        #sidebar ul li {
+            margin-bottom: 4px;
         }
 
         #sidebar ul li a {
-            padding: 15px 25px;
-            font-size: 1.05rem;
+            padding: 12px 16px;
+            font-size: 0.95rem;
             display: flex;
             align-items: center;
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--slate-700);
             text-decoration: none;
-            transition: all 0.3s;
-            border-left: 4px solid transparent;
+            transition: all 0.2s;
+            border-radius: 8px;
             font-weight: 500;
         }
 
-        #sidebar ul li a.active, #sidebar ul li a:hover {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.1);
-            border-left-color: #00f2fe;
+        #sidebar ul li a:hover {
+            background: var(--slate-100);
+            color: var(--slate-900);
+        }
+
+        #sidebar ul li a.active {
+            background: rgba(74, 108, 247, 0.08);
+            color: var(--primary-indigo);
         }
 
         #sidebar ul li a i {
-            width: 30px;
-            font-size: 1.2rem;
+            width: 24px;
+            margin-right: 12px;
+            font-size: 1.1rem;
+            opacity: 0.7;
+        }
+
+        #sidebar ul li a.active i {
+            opacity: 1;
         }
 
         /* Mobile Header */
         .mobile-header {
             display: none;
-            background: white;
-            padding: 15px 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            background: #ffffff;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--slate-200);
             position: sticky;
             top: 0;
             z-index: 1040;
@@ -100,74 +128,98 @@
             width: 100%;
             margin-left: var(--sidebar-width);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            min-height: 100vh;
+            padding: 40px;
         }
 
         #content.active {
             margin-left: 0;
         }
 
-        /* Cards and Elements */
-        .glass-card {
-            background: var(--glass-bg);
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            border: 1px solid rgba(255,255,255,0.4);
-            padding: 25px;
-            margin-bottom: 25px;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            display: flex;
-            align-items: center;
-            transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .stat-card .icon-box {
-            width: 60px;
-            height: 60px;
+        /* Minimal Cards */
+        .minimal-card {
+            background: #ffffff;
             border-radius: 12px;
+            border: 1px solid var(--slate-200);
+            box-shadow: var(--card-shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+            transition: box-shadow 0.2s;
+        }
+
+        .minimal-card:hover {
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        /* Stat Grid Hub */
+        .hub-option {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            height: 100%;
+        }
+
+        .hub-card {
+            border-left: 4px solid var(--primary-indigo);
+            padding: 32px;
+        }
+
+        .hub-card.purple { border-left-color: #8b5cf6; }
+        .hub-card.blue { border-left-color: #3b82f6; }
+
+        .icon-box-minimal {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            color: white;
-            margin-right: 20px;
+            margin-bottom: 20px;
         }
 
+        /* Tables Minimal */
         .table-responsive {
-            background: white;
+            background: #ffffff;
             border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
-            border: 1px solid #ebebeb;
+            border: 1px solid var(--slate-200);
+            padding: 4px;
         }
 
         .table thead th {
-            background: #f8fafc;
-            color: #475569;
-            font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid #e2e8f0;
-            padding: 15px;
+            letter-spacing: 0.05em;
+            color: var(--slate-700);
+            background: var(--slate-50);
+            border-bottom: 1px solid var(--slate-200);
+            padding: 16px;
+            font-weight: 700;
         }
 
         .table tbody td {
-            padding: 15px;
-            vertical-align: middle;
-            color: #334155;
-            border-bottom: 1px solid #f1f5f9;
+            padding: 16px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--slate-100);
         }
+
+        .table-hover tbody tr:hover {
+            background-color: var(--slate-50);
+        }
+
+        /* Badges Minimal */
+        .badge-minimal {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+
+        .badge-blue { background: #eff6ff; color: #1e40af; border-color: #dbeafe; }
+        .badge-purple { background: #f5f3ff; color: #5b21b6; border-color: #ede9fe; }
+        .badge-green { background: #f0fdf4; color: #166534; border-color: #dcfce7; }
+        .badge-red { background: #fef2f2; color: #991b1b; border-color: #fee2e2; }
 
         /* Overlay */
         .sidebar-overlay {
@@ -177,42 +229,42 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(2px);
+            background: rgba(15, 23, 42, 0.4);
             z-index: 1045;
             transition: all 0.3s;
-        }
-        @media (max-width: 991px) {
-            .sidebar-overlay.active {
-                display: block;
-            }
+            backdrop-filter: blur(4px);
         }
 
-        /* Responsive */
         @media (max-width: 991px) {
+            #content {
+                margin-left: 0;
+                padding: 20px;
+            }
             #sidebar {
                 left: calc(-1 * var(--sidebar-width));
             }
             #sidebar.active {
                 left: 0;
             }
-            #content {
-                margin-left: 0;
-            }
             .mobile-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+            }
+            .sidebar-overlay.active {
+                display: block;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="mobile-header d-lg-none">
-        <button type="button" id="sidebarCollapse" class="btn btn-primary bg-gradient border-0 rounded-3">
-            <i class="fas fa-bars"></i>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="mobile-header">
+        <button type="button" id="sidebarCollapse" class="btn btn-light border p-2">
+            <i class="fas fa-bars text-secondary"></i>
         </button>
-        <h5 class="mb-0 fw-bold" style="color: #1e3c72;">Coordinator Panel</h5>
+        <span class="fw-bold text-dark">Coordinator Hub</span>
         <div style="width: 40px;"></div> 
     </div>

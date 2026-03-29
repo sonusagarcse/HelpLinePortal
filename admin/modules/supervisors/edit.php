@@ -18,6 +18,14 @@ if (!$supervisor) {
     exit;
 }
 
+// Get assigned branches for supervisor
+$assigned_bids = [];
+$b_res = mysqli_query($con, "SELECT branch_id FROM supervisor_branches WHERE supervisor_id = $id AND status = 1");
+while ($b = mysqli_fetch_assoc($b_res)) {
+    $assigned_bids[] = $b['branch_id'];
+}
+
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $regno = mysqli_real_escape_string($con, $_POST['regno']);
@@ -39,7 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $aadhar = mysqli_real_escape_string($con, $_POST['aadhar']);
     $othermob_no = mysqli_real_escape_string($con, $_POST['othermob_no']);
     $address = mysqli_real_escape_string($con, $_POST['address']);
-    $bid = mysqli_real_escape_string($con, $_POST['bid']);
+    // Removed single bid, getting array of bids
+    $bids = isset($_POST['bids']) && is_array($_POST['bids']) ? $_POST['bids'] : [];
     $mnid = mysqli_real_escape_string($con, $_POST['mnid']); // Manager ID
     $username = mysqli_real_escape_string($con, $_POST['username']);
     $status = isset($_POST['status']) ? 1 : 0;
@@ -50,19 +59,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ifsccode = mysqli_real_escape_string($con, $_POST['ifsccode']);
     $accountno = mysqli_real_escape_string($con, $_POST['accountno']);
 
+    $legacy_bid = 0; // Set legacy bid to 0
+
     // Update password only if provided
     if (!empty($_POST['pass'])) {
         $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
         $update_query = "UPDATE supervisor SET mnid=?, username=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, pass=?, address=?, bank=?, bank_branch=?, ifsccode=?, accountno=?, bid=?, status=? WHERE id=?";
         $update_stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($update_stmt, "iisssssissssssssssssssssssiii", $mnid, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bank, $bank_branch, $ifsccode, $accountno, $bid, $status, $id);
+        mysqli_stmt_bind_param($update_stmt, "iisssssissssssssssssssssssiii", $mnid, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bank, $bank_branch, $ifsccode, $accountno, $legacy_bid, $status, $id);
     } else {
         $update_query = "UPDATE supervisor SET mnid=?, username=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, address=?, bank=?, bank_branch=?, ifsccode=?, accountno=?, bid=?, status=? WHERE id=?";
         $update_stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($update_stmt, "iisssssisssssssssssssssssiii", $mnid, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $address, $bank, $bank_branch, $ifsccode, $accountno, $bid, $status, $id);
+        mysqli_stmt_bind_param($update_stmt, "iisssssisssssssssssssssssiii", $mnid, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $address, $bank, $bank_branch, $ifsccode, $accountno, $legacy_bid, $status, $id);
     }
 
     if (mysqli_stmt_execute($update_stmt)) {
+        // Update branches
+        mysqli_query($con, "UPDATE supervisor_branches SET status = 0 WHERE supervisor_id = $id");
+        if (!empty($bids)) {
+            $b_query = "INSERT INTO supervisor_branches (supervisor_id, branch_id, assigned_date, status) VALUES (?, ?, ?, 1) ON DUPLICATE KEY UPDATE status = 1";
+            $b_stmt = mysqli_prepare($con, $b_query);
+            $date = date('Y-m-d');
+            foreach ($bids as $branch_id) {
+                $branch_id = (int)$branch_id;
+                mysqli_stmt_bind_param($b_stmt, "iis", $id, $branch_id, $date);
+                mysqli_stmt_execute($b_stmt);
+            }
+        }
+    
         logActivity('update_supervisor', 'supervisor', $id, null, json_encode($_POST));
         header('Location: list.php?success=updated');
         exit;
@@ -309,15 +333,15 @@ include('../../includes/header.php');
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Assigned Branch *</label>
-                            <select name="bid" class="form-select" required>
-                                <option value="">Select Branch</option>
+                            <label class="form-label">Assigned Branches *</label>
+                            <select name="bids[]" class="form-select" multiple required style="height: 120px;">
                                 <?php foreach ($branches as $branch): ?>
-                                    <option value="<?php echo $branch['id']; ?>" <?php echo $supervisor['bid'] == $branch['id'] ? 'selected' : ''; ?>>
+                                    <option value="<?php echo $branch['id']; ?>" <?php echo in_array($branch['id'], $assigned_bids) ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($branch['bname']) . ' (' . htmlspecialchars($branch['bcode']) . ')'; ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <small class="text-muted">Hold CTRL (or CMD on Mac) to select multiple branches.</small>
                         </div>
 
                         <!-- Bank Details -->

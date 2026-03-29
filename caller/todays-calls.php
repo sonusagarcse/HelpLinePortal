@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__ . '/../connection.php');
 session_start();
 
 // Check if caller is logged in
@@ -7,18 +8,23 @@ if (!isset($_SESSION['caller_id'])) {
     exit;
 }
 
-require_once(__DIR__ . '/../connection.php');
-
 $caller_id = $_SESSION['caller_id'];
 $caller_name = $_SESSION['caller_name'];
 
-// Get all calls made by the caller today
+// Get all calls made by the caller today (showing only the latest interaction per unique mobile number to avoid duplicates)
 $query = "SELECT q.*, b.bname, r.name as student_name, r.mob as student_mob, 
                  r.regno as student_regno, r.address as student_address 
           FROM mquery q 
           LEFT JOIN branch b ON q.bid = b.id 
           LEFT JOIN registration r ON q.studentid = r.id
-          WHERE q.callerid = $caller_id AND DATE(q.date) = CURDATE()
+          WHERE q.callerid = $caller_id 
+          AND q.id IN (
+              SELECT MAX(mq.id) 
+              FROM mquery mq 
+              JOIN registration reg ON mq.studentid = reg.id 
+              WHERE mq.callerid = $caller_id AND DATE(mq.date) = CURDATE() 
+              GROUP BY reg.mob
+          )
           ORDER BY q.id DESC";
 $today_calls = [];
 $result = mysqli_query($con, $query);

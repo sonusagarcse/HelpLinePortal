@@ -11,6 +11,23 @@ require_once(__DIR__ . '/../connection.php');
 
 $supervisor_id = $_SESSION['supervisor_id'];
 $supervisor_name = $_SESSION['supervisor_name'];
+$supervisor_bids = $_SESSION['supervisor_bids'] ?? [];
+
+// Get assigned branches for the filter dropdown
+$branches = [];
+if (!empty($supervisor_bids)) {
+    $bids_list = implode(',', array_map('intval', $supervisor_bids));
+    $b_query = mysqli_query($con, "SELECT id, bname, bcode FROM branch WHERE id IN ($bids_list) AND status = 1 ORDER BY bname ASC");
+    while ($b = mysqli_fetch_assoc($b_query)) {
+        $branches[] = $b;
+    }
+}
+
+$selected_bid = isset($_GET['bid']) ? (int)$_GET['bid'] : 0;
+$branch_filter = "";
+if ($selected_bid > 0 && in_array($selected_bid, $supervisor_bids)) {
+    $branch_filter = " AND c.bid = $selected_bid";
+}
 
 // Get all callers under this supervisor
 $query = "SELECT c.*, b.bname, b.bcode,
@@ -19,7 +36,7 @@ $query = "SELECT c.*, b.bname, b.bcode,
           (SELECT COUNT(*) FROM mquery WHERE callerid = c.id AND DATE(date) = CURDATE()) as today_calls
           FROM caller c 
           LEFT JOIN branch b ON c.bid = b.id 
-          WHERE c.svid = $supervisor_id 
+          WHERE c.svid = $supervisor_id $branch_filter
           ORDER BY c.name ASC";
 $callers = [];
 $result = mysqli_query($con, $query);
@@ -27,146 +44,135 @@ while ($row = mysqli_fetch_assoc($result)) {
     $callers[] = $row;
 }
 ?>
-<!DOCTYPE html>
-<html lang="en">
+<?php 
+$page_title = "My Callers";
+include 'includes/header.php'; 
+?>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Callers - Supervisor Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-    <style>
-        body {
-            background: #f8f9fa;
-        }
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">My Callers</h1>
+        <p class="page-subtitle">Manage and monitor the performance of your assigned callers.</p>
+    </div>
+</div>
 
-        .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .table-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-    </style>
-</head>
-
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php">
-                <i class="fas fa-user-tie me-2"></i>Supervisor Dashboard
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php">
-                            <i class="fas fa-home me-1"></i>Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="callers.php">
-                            <i class="fas fa-users me-1"></i>My Callers
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="reports.php">
-                            <i class="fas fa-chart-bar me-1"></i>Reports
-                        </a>
-                    </li>
-                </ul>
-                <div class="ms-3 d-flex align-items-center">
-                    <span class="text-white me-3">
-                        <i class="fas fa-user me-2"></i><?php echo htmlspecialchars($supervisor_name); ?>
-                    </span>
-                    <a href="logout.php" class="btn btn-light btn-sm">
-                        <i class="fas fa-sign-out-alt me-1"></i>Logout
-                    </a>
-                </div>
+<!-- Filter Card -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label text-dark fw-medium">Filter by Branch</label>
+                <select name="bid" class="form-select">
+                    <option value="">All Assigned Branches</option>
+                    <?php foreach ($branches as $branch): ?>
+                        <option value="<?php echo $branch['id']; ?>" <?php echo $selected_bid == $branch['id'] ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($branch['bname']); ?> (<?php echo htmlspecialchars($branch['bcode']); ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
-        </div>
-    </nav>
-
-    <div class="container-fluid mt-4">
-        <div class="table-card">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5><i class="fas fa-users me-2"></i>My Callers (<?php echo count($callers); ?>)</h5>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100 py-2 d-flex justify-content-center align-items-center gap-2">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
             </div>
-            <div class="table-responsive">
-                <table id="callersTable" class="table table-hover">
-                    <thead>
+            <?php if ($selected_bid > 0): ?>
+            <div class="col-md-2">
+                <a href="callers.php" class="btn btn-outline-secondary w-100 py-2">Clear</a>
+            </div>
+            <?php endif; ?>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header border-bottom-0 pt-4 pb-0 bg-transparent d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-users text-primary me-2"></i>Callers List <span class="badge bg-secondary ms-2"><?php echo count($callers); ?></span></h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="callersTable" class="table table-hover mb-0 w-100">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Regno</th>
+                        <th>Name</th>
+                        <th>Father</th>
+                        <th>Branch</th>
+                        <th>Mobile</th>
+                        <th>Email</th>
+                        <th>Total Calls</th>
+                        <th>Completed</th>
+                        <th>Today</th>
+                        <th>DOJ</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    <?php foreach ($callers as $caller): ?>
                         <tr>
-                            <th>ID</th>
-                            <th>Regno</th>
-                            <th>Name</th>
-                            <th>Father</th>
-                            <th>Branch</th>
-                            <th>Mobile</th>
-                            <th>Email</th>
-                            <th>Total Calls</th>
-                            <th>Completed</th>
-                            <th>Today</th>
-                            <th>DOJ</th>
-                            <th>Status</th>
-                            <th>Action</th>
+                            <td class="text-muted">#<?php echo $caller['id']; ?></td>
+                            <td><span class="fw-medium text-dark"><?php echo htmlspecialchars($caller['regno']); ?></span></td>
+                            <td class="fw-medium text-dark"><?php echo htmlspecialchars($caller['name']); ?></td>
+                            <td><span class="text-muted"><?php echo htmlspecialchars($caller['father']); ?></span></td>
+                            <td><span class="text-muted"><?php echo htmlspecialchars($caller['bcode'] . ' - ' . $caller['bname']); ?></span></td>
+                            <td><?php echo htmlspecialchars($caller['mob']); ?></td>
+                            <td><span class="text-muted small"><?php echo htmlspecialchars($caller['email']); ?></span></td>
+                            <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10 px-2 py-1"><?php echo $caller['total_calls']; ?></span></td>
+                            <td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-10 px-2 py-1"><?php echo $caller['completed_calls']; ?></span></td>
+                            <td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-10 px-2 py-1"><?php echo $caller['today_calls']; ?></span></td>
+                            <td class="text-muted"><?php echo date('d M Y', strtotime($caller['doj'])); ?></td>
+                            <td>
+                                <?php if ($caller['status'] == 1): ?>
+                                    <span class="badge bg-success border-success border-opacity-25 px-2 py-1">Active</span>
+                                <?php else: ?>
+                                    <span class="badge bg-danger border-danger border-opacity-25 px-2 py-1">Inactive</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <a href="caller_details.php?id=<?php echo $caller['id']; ?>" class="btn btn-sm btn-light border shadow-sm px-3" title="View Details">
+                                    <i class="fas fa-eye text-primary"></i>
+                                </a>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($callers as $caller): ?>
-                            <tr>
-                                <td><?php echo $caller['id']; ?></td>
-                                <td><?php echo htmlspecialchars($caller['regno']); ?></td>
-                                <td><?php echo htmlspecialchars($caller['name']); ?></td>
-                                <td><?php echo htmlspecialchars($caller['father']); ?></td>
-                                <td><?php echo htmlspecialchars($caller['bcode'] . ' - ' . $caller['bname']); ?></td>
-                                <td><?php echo htmlspecialchars($caller['mob']); ?></td>
-                                <td><?php echo htmlspecialchars($caller['email']); ?></td>
-                                <td><span class="badge bg-primary"><?php echo $caller['total_calls']; ?></span></td>
-                                <td><span class="badge bg-success"><?php echo $caller['completed_calls']; ?></span></td>
-                                <td><span class="badge bg-info"><?php echo $caller['today_calls']; ?></span></td>
-                                <td><?php echo date('d-m-Y', strtotime($caller['doj'])); ?></td>
-                                <td>
-                                    <?php if ($caller['status'] == 1): ?>
-                                        <span class="badge bg-success">Active</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-danger">Inactive</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <a href="caller_details.php?id=<?php echo $caller['id']; ?>" class="btn btn-sm btn-info"
-                                        title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
 
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('#callersTable').DataTable({
-                order: [[1, 'asc']],
-                pageLength: 25,
-                dom: 'Bfrtip',
-                buttons: ['copy', 'csv', 'excel', 'pdf', 'print']
-            });
+<?php include 'includes/footer.php'; ?>
+<script>
+    $(document).ready(function () {
+        $('#callersTable').DataTable({
+            order: [[1, 'asc']],
+            pageLength: 25,
+            dom: '<"row mb-3"<"col-md-6"B><"col-md-6"f>>rt<"row mt-3"<"col-md-6"i><"col-md-6"p>>',
+            buttons: [
+                {
+                    extend: 'copy',
+                    className: 'btn btn-sm btn-light border me-1'
+                },
+                {
+                    extend: 'csv',
+                    className: 'btn btn-sm btn-light border me-1'
+                },
+                {
+                    extend: 'excel',
+                    className: 'btn btn-sm btn-light border me-1'
+                },
+                {
+                    extend: 'pdf',
+                    className: 'btn btn-sm btn-light border me-1'
+                },
+                {
+                    extend: 'print',
+                    className: 'btn btn-sm btn-light border'
+                }
+            ]
         });
-    </script>
-</body>
-
-</html>
+    });
+</script>

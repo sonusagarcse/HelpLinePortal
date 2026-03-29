@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__ . '/../connection.php');
 session_start();
 
 // Check if caller is logged in
@@ -6,8 +7,6 @@ if (!isset($_SESSION['caller_id'])) {
     header('Location: ' . (isset($SITE_URL) ? $SITE_URL : '') . '/caller_login.php');
     exit;
 }
-
-require_once(__DIR__ . '/../connection.php');
 
 $caller_id = $_SESSION['caller_id'];
 $caller_name = $_SESSION['caller_name'];
@@ -31,8 +30,12 @@ $total_query = "SELECT COUNT(*) as total FROM registration r
 $result = mysqli_query($con, $total_query);
 $stats['total_assigned'] = mysqli_fetch_assoc($result)['total'];
 
-// Completed calls
-$result_unique = mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND status = 0");
+// Completed calls (Successfully closed students)
+$completed_query = "SELECT COUNT(DISTINCT r.id) as total FROM registration r 
+                    LEFT JOIN mquery m ON m.studentid = r.id
+                    WHERE (m.callerid = $caller_id AND m.status = 0) 
+                    OR (r.assigned_caller = $caller_id AND r.reg_status = 3)";
+$result_unique = mysqli_query($con, $completed_query);
 $stats['completed'] = mysqli_fetch_assoc($result_unique)['total'];
 
 // 3. Pending Data
@@ -40,6 +43,7 @@ $precise_pending_query = "SELECT COUNT(*) as total FROM registration r
                          LEFT JOIN ($latest_mq_subquery) mq_latest ON r.id = mq_latest.studentid
                          WHERE $where_clause
                          AND (mq_latest.status IS NULL OR mq_latest.status = 1) 
+                         AND (r.reg_status = 0 AND r.coordinator_approval_status = 0)
                          AND (mq_latest.nextdate IS NULL OR mq_latest.nextdate <= CURDATE())";
 $result = mysqli_query($con, $precise_pending_query);
 $stats['pending'] = mysqli_fetch_assoc($result)['total'];
@@ -103,7 +107,7 @@ $followup_count = count($todays_followups);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Caller Dashboard - <?php echo $SITE_NAME; ?></title>
+    <title>Caller Dashboard - <?php echo $SITE_NAME ?? 'Yuva Helpline'; ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -329,6 +333,14 @@ $followup_count = count($todays_followups);
 
         .stat-link { text-decoration: none; color: inherit; }
 
+        .hover-scale {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+
         @media (max-width: 768px) {
             .stat-card { padding: 1rem; }
             .stat-card h3 { font-size: 1.5rem; }
@@ -344,42 +356,35 @@ $followup_count = count($todays_followups);
                 <div class="bg-primary bg-gradient rounded-3 p-2 me-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
                     <i class="fas fa-headset text-white"></i>
                 </div>
-                <span class="fw-bold">Caller <span class="text-primary-emphasis">Portal</span></span>
+                <div>
+                    <div class="fw-bold lh-1">Caller <span class="text-white">Portal</span></div>
+                    <div class="text-white-50 small mt-1" style="font-size: 0.7rem; letter-spacing: 0.05em; font-weight: 500;">
+                        Welcome back, <span class="text-white fw-semibold"><?php echo $caller_name; ?></span>
+                    </div>
+                </div>
             </a>
             
             <div class="ms-auto d-flex align-items-center">
-                <div class="d-none d-md-flex flex-column align-items-end me-4">
-                    <span class="text-white-50 small text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.1em;">Logged In As</span>
-                    <span class="text-white fw-bold"><?php echo $caller_name; ?></span>
+                <div class="d-flex align-items-center me-2 me-md-4">
+                    <div class="bg-white bg-opacity-10 border border-white border-opacity-10 rounded-pill px-2 py-1 px-md-3 py-md-2 me-2 me-md-3 shadow-sm d-flex align-items-center">
+                        <i class="fas fa-wallet text-success me-1 me-md-2 small"></i>
+                        <span class="text-white fw-bold" style="font-size: 0.8rem;">₹<?php echo number_format($stats['earnings'], 2); ?></span>
+                    </div>
+                    <div class="bg-white bg-opacity-10 border border-white border-opacity-10 rounded-pill px-3 py-2 shadow-sm d-none d-md-flex align-items-center">
+                        <i class="fas fa-calendar-alt text-white-50 me-2 small"></i>
+                        <span class="text-white small fw-medium"><?php echo date('M d, Y'); ?></span>
+                    </div>
                 </div>
-                <div class="vr bg-white opacity-25 mx-3 d-none d-md-block" style="height: 30px;"></div>
-                <a href="logout.php" class="btn btn-danger btn-sm rounded-pill px-4 fw-bold shadow-sm">
-                    <i class="fas fa-power-off me-2"></i>Sign Out
+                
+                <div class="vr bg-white opacity-25 mx-2 mx-md-3 d-none d-md-block" style="height: 30px;"></div>
+                <a href="logout.php" class="btn btn-danger btn-sm rounded-pill px-3 px-md-4 fw-bold shadow-sm transition-all hover-scale">
+                    <i class="fas fa-power-off me-1 me-md-2"></i><span class="d-none d-sm-inline">Sign Out</span><span class="d-inline d-sm-none">Exit</span>
                 </a>
             </div>
         </div>
     </nav>
 
-    <div class="container-fluid px-4 mt-4">
-        <!-- Dashboard Greeting -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex align-items-center justify-content-between bg-white p-4 rounded-4 shadow-sm border border-white">
-                    <div>
-                        <h2 class="h4 mb-1">Welcome back, <span class="text-primary"><?php echo $caller_name; ?></span>!</h2>
-                        <p class="text-muted small mb-0">Here's what's happening with your students today.</p>
-                    </div>
-                    <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 px-lg-3 py-2 rounded-pill fs-6 shadow-sm w-100 w-lg-auto d-flex justify-content-center">
-                            <i class="fas fa-wallet me-2"></i>Total Earnings: ₹<?php echo number_format($stats['earnings'], 2); ?>
-                        </span>
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill shadow-sm d-none d-md-inline-block">
-                            <i class="fas fa-calendar-alt me-2"></i><?php echo date('M d, Y'); ?>
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="container-fluid px-4 mt-5">
 
         <div class="row g-4 mb-5">
             <div class="col-md-3">
@@ -461,9 +466,9 @@ $followup_count = count($todays_followups);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php 
+                                    <?php
                                     $count = 0;
-                                    foreach ($todays_followups as $data): 
+                                    foreach ($todays_followups as $data):
                                         if ($count >= 5) break;
                                         $count++;
                                     ?>

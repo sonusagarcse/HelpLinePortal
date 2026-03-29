@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__ . '/../connection.php');
 session_start();
 
 // Check if caller is logged in
@@ -6,8 +7,6 @@ if (!isset($_SESSION['caller_id'])) {
     header('Location: ' . (isset($SITE_URL) ? $SITE_URL : '') . '/caller_login.php');
     exit;
 }
-
-require_once(__DIR__ . '/../connection.php');
 
 $caller_id = $_SESSION['caller_id'];
 $caller_name = $_SESSION['caller_name'];

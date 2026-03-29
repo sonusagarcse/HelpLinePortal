@@ -5,6 +5,7 @@ require_once('config/auth.php');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $student_id = isset($_POST['student_id']) ? (int)$_POST['student_id'] : 0;
     $action = isset($_POST['action']) ? $_POST['action'] : '';
+    $redirect = isset($_POST['redirect']) ? $_POST['redirect'] : 'index.php';
 
     if ($student_id > 0) {
         // Verify student belongs to this coordinator's branch and is pending
@@ -39,20 +40,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         mysqli_stmt_execute($e_stmt);
                     }
                     mysqli_commit($con);
-                    header('Location: index.php?success=approved');
+                    header("Location: $redirect?success=approved");
                 } catch(Exception $e) {
                     mysqli_rollback($con);
-                    header('Location: index.php?error=db_error');
+                    header("Location: $redirect?error=db_error");
                 }
                 exit;
 
             } elseif ($action === 'reject') {
-                // Update registration status to rejected (or back to 0)
-                // Let's use 3 for rejected. Caller can see it was rejected if needed.
                 $u_stmt = mysqli_prepare($con, "UPDATE registration SET coordinator_approval_status = 3 WHERE id = ?");
                 mysqli_stmt_bind_param($u_stmt, "i", $student_id);
                 mysqli_stmt_execute($u_stmt);
-                header('Location: index.php?success=rejected');
+                header("Location: $redirect?success=rejected");
                 exit;
             }
         }

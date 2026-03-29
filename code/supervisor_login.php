@@ -30,8 +30,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['supervisor_regno'] = $row['regno'];
             $_SESSION['supervisor_name'] = $row['name'];
             $_SESSION['supervisor_email'] = $row['email'];
-            $_SESSION['supervisor_bid'] = $row['bid'];
             $_SESSION['last_activity'] = time();
+
+            // Fetch all assigned branches
+            $bids = [];
+            $b_query = mysqli_query($con, "SELECT branch_id FROM supervisor_branches WHERE supervisor_id = " . $row['id'] . " AND status = 1");
+            while ($b_row = mysqli_fetch_assoc($b_query)) {
+                $bids[] = $b_row['branch_id'];
+            }
+            $_SESSION['supervisor_bids'] = $bids;
+            $_SESSION['supervisor_bid'] = !empty($bids) ? $bids[0] : 0; // Primary branch (first one)
 
             // Redirect to supervisor dashboard
             header('Location: ../supervisor/index.php');
