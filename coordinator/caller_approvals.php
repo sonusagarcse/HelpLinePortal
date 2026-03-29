@@ -50,20 +50,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_registration'
     }
 }
 
-// Fetch students with supervisor-filled credentials (reg_status = 2) in coordinator's branch
+// Fetch students with supervisor-filled credentials (reg_status = 2) in coordinator's branches
 $pending_registration = [];
-$query = "SELECT r.*, mc.name as category_name, c.name as caller_name
-          FROM registration r
-          LEFT JOIN member_category mc ON r.mcategory = mc.id
-          LEFT JOIN caller c ON r.assigned_caller = c.id
-          WHERE r.reg_status = 2 AND r.bid = ?
-          ORDER BY r.id DESC";
-$stmt = mysqli_prepare($con, $query);
-mysqli_stmt_bind_param($stmt, "i", $coordinator_bid);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
-while ($row = mysqli_fetch_assoc($result)) {
-    $pending_registration[] = $row;
+if (!empty($coordinator_bids)) {
+    $bids_list = implode(',', array_map('intval', $coordinator_bids));
+    $query = "SELECT r.*, mc.name as category_name, c.name as caller_name
+              FROM registration r
+              LEFT JOIN member_category mc ON r.mcategory = mc.id
+              LEFT JOIN caller c ON r.assigned_caller = c.id
+              WHERE r.reg_status = 2 AND r.bid IN ($bids_list)
+              ORDER BY r.id DESC";
+    $result = mysqli_query($con, $query);
+    while ($row = mysqli_fetch_assoc($result)) {
+        $pending_registration[] = $row;
+    }
 }
 
 include('includes/header.php');

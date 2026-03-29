@@ -47,9 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $aadhar = mysqli_real_escape_string($con, $_POST['aadhar']);
     $othermob_no = mysqli_real_escape_string($con, $_POST['othermob_no']);
     $address = mysqli_real_escape_string($con, $_POST['address']);
-    // Removed single bid, getting array of bids
     $bids = isset($_POST['bids']) && is_array($_POST['bids']) ? $_POST['bids'] : [];
-    $mnid = mysqli_real_escape_string($con, $_POST['mnid']); // Manager ID
+    $mnid = (int)$_POST['mnid']; // Manager ID
+    $assigned_coordinator_id = (int)$_POST['assigned_coordinator_id']; // Coordinator ID
     $username = mysqli_real_escape_string($con, $_POST['username']);
     $status = isset($_POST['status']) ? 1 : 0;
 
@@ -64,13 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Update password only if provided
     if (!empty($_POST['pass'])) {
         $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
-        $update_query = "UPDATE supervisor SET mnid=?, username=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, pass=?, address=?, bank=?, bank_branch=?, ifsccode=?, accountno=?, bid=?, status=? WHERE id=?";
+        $update_query = "UPDATE supervisor SET mnid=?, assigned_coordinator_id=?, username=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, pass=?, address=?, bank=?, bank_branch=?, ifsccode=?, accountno=?, bid=?, status=? WHERE id=?";
         $update_stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($update_stmt, "iisssssissssssssssssssssssiii", $mnid, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bank, $bank_branch, $ifsccode, $accountno, $legacy_bid, $status, $id);
+        mysqli_stmt_bind_param($update_stmt, "iiisssssissssssssssssssssssiii", $mnid, $assigned_coordinator_id, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bank, $bank_branch, $ifsccode, $accountno, $legacy_bid, $status, $id);
     } else {
-        $update_query = "UPDATE supervisor SET mnid=?, username=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, address=?, bank=?, bank_branch=?, ifsccode=?, accountno=?, bid=?, status=? WHERE id=?";
+        $update_query = "UPDATE supervisor SET mnid=?, assigned_coordinator_id=?, username=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, address=?, bank=?, bank_branch=?, ifsccode=?, accountno=?, bid=?, status=? WHERE id=?";
         $update_stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($update_stmt, "iisssssisssssssssssssssssiii", $mnid, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $address, $bank, $bank_branch, $ifsccode, $accountno, $legacy_bid, $status, $id);
+        mysqli_stmt_bind_param($update_stmt, "iiisssssisssssssssssssssssiii", $mnid, $assigned_coordinator_id, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $address, $bank, $bank_branch, $ifsccode, $accountno, $legacy_bid, $status, $id);
     }
 
     if (mysqli_stmt_execute($update_stmt)) {
@@ -107,6 +107,13 @@ $branches = [];
 $result = mysqli_query($con, "SELECT id, bname, bcode FROM branch WHERE status = 1 ORDER BY bname");
 while ($row = mysqli_fetch_assoc($result)) {
     $branches[] = $row;
+}
+
+// Get coordinators for dropdown
+$coordinators = [];
+$result = mysqli_query($con, "SELECT id, name, username FROM centre_coordinator WHERE status = 1 ORDER BY name");
+while ($row = mysqli_fetch_assoc($result)) {
+    $coordinators[] = $row;
 }
 
 include('../../includes/header.php');
@@ -176,6 +183,19 @@ include('../../includes/header.php');
                                 <?php endforeach; ?>
                             </select>
                             <small class="text-muted">This supervisor will report to the selected manager</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-primary"><i class="fas fa-network-wired me-1"></i>Assigned Centre Coordinator *</label>
+                            <select name="assigned_coordinator_id" class="form-select border-primary" required>
+                                <option value="">Select Coordinator</option>
+                                <?php foreach ($coordinators as $coord): ?>
+                                    <option value="<?php echo $coord['id']; ?>" <?php echo isset($supervisor['assigned_coordinator_id']) && $supervisor['assigned_coordinator_id'] == $coord['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($coord['name']) . ' (' . htmlspecialchars($coord['username']) . ')'; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small class="text-muted">Credentials created by this supervisor will auto-route to this coordinator.</small>
                         </div>
 
                         <!-- Personal Information -->

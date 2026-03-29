@@ -23,8 +23,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Login Success
             $_SESSION['coordinator_id'] = $row['id'];
             $_SESSION['coordinator_name'] = $row['name'];
-            $_SESSION['coordinator_bid'] = $row['bid'];
             $_SESSION['coordinator_email'] = $row['email'];
+            
+            // Fetch all assigned branches
+            $bids = [];
+            $b_query = mysqli_query($con, "SELECT branch_id FROM coordinator_branches WHERE coordinator_id = " . $row['id'] . " AND status = 1");
+            if ($b_query) {
+                while($b_row = mysqli_fetch_assoc($b_query)){
+                    $bids[] = $b_row['branch_id'];
+                }
+            }
+            $_SESSION['coordinator_bids'] = $bids;
+            
+            // Legacy fallback if needed (useful before full migration)
+            if (empty($bids) && $row['bid'] > 0) {
+                $_SESSION['coordinator_bids'] = [$row['bid']];
+                $_SESSION['coordinator_bid'] = $row['bid'];
+            } else {
+                $_SESSION['coordinator_bid'] = !empty($bids) ? $bids[0] : 0;
+            }
 
             header('Location: ../coordinator/index.php');
             exit;

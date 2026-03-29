@@ -6,17 +6,17 @@ $page_title = 'Approval & Rejection History';
 
 // Fetch History (coordinator_approval_status 2 or 3)
 $history_students = [];
-$query = "SELECT r.*, 
-                 (SELECT cn.name FROM mquery m JOIN caller cn ON m.callerid = cn.id WHERE m.studentid = r.id AND m.status = 0 ORDER BY m.id DESC LIMIT 1) as caller_name 
-          FROM registration r 
-          WHERE r.coordinator_approval_status IN (2, 3) AND r.bid = ? 
-          ORDER BY r.id DESC";
-$stmt = mysqli_prepare($con, $query);
-mysqli_stmt_bind_param($stmt, "i", $coordinator_bid);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
-while ($row = mysqli_fetch_assoc($result)) {
-    $history_students[] = $row;
+if (!empty($coordinator_bids)) {
+    $bids_list = implode(',', array_map('intval', $coordinator_bids));
+    $query = "SELECT r.*, 
+                     (SELECT cn.name FROM mquery m JOIN caller cn ON m.callerid = cn.id WHERE m.studentid = r.id AND m.status = 0 ORDER BY m.id DESC LIMIT 1) as caller_name 
+              FROM registration r 
+              WHERE r.coordinator_approval_status IN (2, 3) AND (r.bid IN ($bids_list) OR r.assigned_coordinator = $coordinator_id)
+              ORDER BY r.id DESC";
+    $result = mysqli_query($con, $query);
+    while ($row = mysqli_fetch_assoc($result)) {
+        $history_students[] = $row;
+    }
 }
 
 include('includes/header.php');

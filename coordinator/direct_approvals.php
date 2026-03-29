@@ -6,17 +6,17 @@ $page_title = 'Direct Admission Confirmations';
 
 // Fetch Direct Admissions (coordinator_approval_status = 1)
 $direct_admissions = [];
-$direct_query = "SELECT r.*, 
-                 (SELECT cn.name FROM mquery m JOIN caller cn ON m.callerid = cn.id WHERE m.studentid = r.id AND m.status = 0 ORDER BY m.id DESC LIMIT 1) as caller_name 
-                 FROM registration r 
-                 WHERE r.coordinator_approval_status = 1 AND r.reg_status = 0 AND r.bid = ? 
-                 ORDER BY r.id DESC";
-$d_stmt = mysqli_prepare($con, $direct_query);
-mysqli_stmt_bind_param($d_stmt, "i", $coordinator_bid);
-mysqli_stmt_execute($d_stmt);
-$d_result = mysqli_stmt_get_result($d_stmt);
-while ($row = mysqli_fetch_assoc($d_result)) {
-    $direct_admissions[] = $row;
+if (!empty($coordinator_bids)) {
+    $bids_list = implode(',', array_map('intval', $coordinator_bids));
+    $direct_query = "SELECT r.*, 
+                     (SELECT cn.name FROM mquery m JOIN caller cn ON m.callerid = cn.id WHERE m.studentid = r.id AND m.status = 0 ORDER BY m.id DESC LIMIT 1) as caller_name 
+                     FROM registration r 
+                     WHERE r.coordinator_approval_status = 1 AND r.reg_status = 0 AND r.bid IN ($bids_list) 
+                     ORDER BY r.id DESC";
+    $d_result = mysqli_query($con, $direct_query);
+    while ($row = mysqli_fetch_assoc($d_result)) {
+        $direct_admissions[] = $row;
+    }
 }
 $direct_count = count($direct_admissions);
 

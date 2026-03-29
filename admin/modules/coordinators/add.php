@@ -9,17 +9,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = mysqli_real_escape_string($con, $_POST['name']);
     $email = mysqli_real_escape_string($con, $_POST['email']);
     $mob = mysqli_real_escape_string($con, $_POST['mob']);
-    $bid = mysqli_real_escape_string($con, $_POST['bid']);
+    $bids = isset($_POST['bids']) && is_array($_POST['bids']) ? $_POST['bids'] : [];
+    $legacy_bid = 0; // Legacy column fallback
+
     $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
     $status = isset($_POST['status']) ? 1 : 0;
     $date = date('Y-m-d H:i:s');
 
     $query = "INSERT INTO centre_coordinator (bid, username, name, email, mob, pass, status, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = mysqli_prepare($con, $query);
-    mysqli_stmt_bind_param($stmt, "isssssis", $bid, $username, $name, $email, $mob, $pass, $status, $date);
+    mysqli_stmt_bind_param($stmt, "isssssis", $legacy_bid, $username, $name, $email, $mob, $pass, $status, $date);
 
     try {
         if (mysqli_stmt_execute($stmt)) {
+            $coordinator_id = mysqli_insert_id($con);
+            
+            // Insert multiple branches
+            if (!empty($bids)) {
+                $b_query = "INSERT INTO coordinator_branches (coordinator_id, branch_id, assigned_date, status) VALUES (?, ?, ?, 1)";
+                $b_stmt = mysqli_prepare($con, $b_query);
+                $assign_date = date('Y-m-d');
+                foreach ($bids as $branch_id) {
+                    $branch_id = (int)$branch_id;
+                    mysqli_stmt_bind_param($b_stmt, "iis", $coordinator_id, $branch_id, $assign_date);
+                    mysqli_stmt_execute($b_stmt);
+                }
+            }
+            
             header('Location: list.php?success=added');
             exit;
         }
@@ -83,14 +99,13 @@ endif; ?>
                             <input type="text" name="mob" class="form-control" required>
                         </div>
                         <div class="col-md-6">
-                            <label>Branch</label>
-                            <select name="bid" class="form-control" required>
-                                <option value="">Select Branch</option>
+                            <label>Branch Assignment *</label>
+                            <select name="bids[]" class="form-control" multiple required style="height:120px;">
                                 <?php foreach ($branches as $b): ?>
-                                    <option value="<?php echo $b['id']; ?>"><?php echo $b['bcode'] . ' - ' . $b['bname']; ?></option>
-                                <?php
-endforeach; ?>
+                                    <option value="<?php echo $b['id']; ?>"><?php echo htmlspecialchars($b['bcode'] . ' - ' . $b['bname']); ?></option>
+                                <?php endforeach; ?>
                             </select>
+                            <small class="text-muted">Hold CTRL/CMD to select multiple branches</small>
                         </div>
                         <div class="col-md-6">
                             <label>Password</label>

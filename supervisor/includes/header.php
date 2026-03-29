@@ -1,8 +1,9 @@
 <?php
 $current_page = basename($_SERVER['PHP_SELF']);
 
-// Sync supervisor branches from database to keep session up-to-date with Admin changes
+// Sync supervisor branches and coordinator assignment from database to keep session up-to-date with Admin changes
 if (isset($_SESSION['supervisor_id']) && isset($con)) {
+    // 1. Sync branches
     $sync_bids = [];
     $sync_query = mysqli_query($con, "SELECT branch_id FROM supervisor_branches WHERE supervisor_id = " . (int)$_SESSION['supervisor_id'] . " AND status = 1");
     if ($sync_query) {
@@ -16,6 +17,12 @@ if (isset($_SESSION['supervisor_id']) && isset($con)) {
         } else {
             $_SESSION['supervisor_bid'] = 0;
         }
+    }
+    
+    // 2. Sync assigned coordinator
+    $coord_query = mysqli_query($con, "SELECT assigned_coordinator_id FROM supervisor WHERE id = " . (int)$_SESSION['supervisor_id']);
+    if ($coord_query && $coord_row = mysqli_fetch_assoc($coord_query)) {
+        $_SESSION['assigned_coordinator_id'] = (int)$coord_row['assigned_coordinator_id'];
     }
 }
 ?>

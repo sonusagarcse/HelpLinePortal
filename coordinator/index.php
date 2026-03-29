@@ -5,12 +5,14 @@ require_once('config/auth.php');
 $page_title = 'Coordinator Dashboard Hub';
 
 // Fetch Counts for Dashboard
-// 1. Direct Admissions
-$direct_count_res = mysqli_query($con, "SELECT COUNT(*) as total FROM registration WHERE coordinator_approval_status = 1 AND reg_status = 0 AND bid = $coordinator_bid");
+$bids_list = !empty($coordinator_bids) ? implode(',', array_map('intval', $coordinator_bids)) : '0';
+
+// 1. Direct Admissions (Based on assigned branches)
+$direct_count_res = mysqli_query($con, "SELECT COUNT(*) as total FROM registration WHERE coordinator_approval_status = 1 AND reg_status = 0 AND bid IN ($bids_list)");
 $direct_count = mysqli_fetch_assoc($direct_count_res)['total'];
 
-// 2. Supervisor Registrations (reg_status = 2)
-$reg_count_res = mysqli_query($con, "SELECT COUNT(*) as total FROM registration WHERE reg_status = 2 AND coordinator_approval_status = 0 AND bid = $coordinator_bid");
+// 2. Supervisor Registrations (Based on explicit assignment)
+$reg_count_res = mysqli_query($con, "SELECT COUNT(*) as total FROM registration WHERE reg_status = 2 AND coordinator_approval_status = 1 AND assigned_coordinator = $coordinator_id");
 $reg_count = mysqli_fetch_assoc($reg_count_res)['total'];
 
 include('includes/header.php');
@@ -24,7 +26,7 @@ include('includes/header.php');
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
             <div>
                 <h1 class="fw-bold mb-1 h3">Dashboard Hub</h1>
-                <p class="text-muted mb-0 small"><i class="fas fa-building me-1 opacity-50"></i><?php echo htmlspecialchars($coordinator_bname); ?> Branch</p>
+                <p class="text-muted mb-0 small"><i class="fas fa-building me-1 opacity-50"></i><?php echo htmlspecialchars($coordinator_bname); ?> Branch(es)</p>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <div class="p-2 px-3 bg-white border rounded-pill shadow-sm small fw-medium">

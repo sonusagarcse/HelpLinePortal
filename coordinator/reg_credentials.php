@@ -49,16 +49,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_registration'
     }
 }
 
-// Fetch Supervisor Registrations (reg_status = 2)
+// Fetch Supervisor Registrations (reg_status = 2) for this coordinator
 $supervisor_registrations = [];
 $reg_query = "SELECT r.*, mc.name as category_name, c.name as caller_name
               FROM registration r
               LEFT JOIN member_category mc ON r.mcategory = mc.id
               LEFT JOIN caller c ON r.assigned_caller = c.id
-              WHERE r.reg_status = 2 AND r.coordinator_approval_status = 0 AND r.bid = ?
+              WHERE r.reg_status = 2 AND r.coordinator_approval_status = 1 AND r.assigned_coordinator = ?
               ORDER BY r.id DESC";
 $r_stmt = mysqli_prepare($con, $reg_query);
-mysqli_stmt_bind_param($r_stmt, "i", $coordinator_bid);
+mysqli_stmt_bind_param($r_stmt, "i", $coordinator_id);
 mysqli_stmt_execute($r_stmt);
 $r_result = mysqli_stmt_get_result($r_stmt);
 while ($row = mysqli_fetch_assoc($r_result)) {

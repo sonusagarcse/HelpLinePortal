@@ -23,16 +23,20 @@ if (!isset($_SESSION['coordinator_id'])) {
 $coordinator_id = $_SESSION['coordinator_id'];
 $coordinator_name = $_SESSION['coordinator_name'];
 $coordinator_bid = $_SESSION['coordinator_bid'];
+$coordinator_bids = $_SESSION['coordinator_bids'] ?? [$coordinator_bid];
 
-// Fetch latest branch name for UI
-$b_query = "SELECT bname FROM branch WHERE id = ?";
-$b_stmt = mysqli_prepare($con, $b_query);
-mysqli_stmt_bind_param($b_stmt, "i", $coordinator_bid);
-mysqli_stmt_execute($b_stmt);
-$b_res = mysqli_stmt_get_result($b_stmt);
-if($b_row = mysqli_fetch_assoc($b_res)) {
-    $coordinator_bname = $b_row['bname'];
-} else {
-    $coordinator_bname = "Unknown Branch";
+// Fetch branch names for UI
+$coordinator_bname = "Unknown Branch";
+if (!empty($coordinator_bids)) {
+    $bids_list = implode(',', array_map('intval', $coordinator_bids));
+    $b_query = "SELECT bname FROM branch WHERE id IN ($bids_list)";
+    $b_res = mysqli_query($con, $b_query);
+    $bnames = [];
+    while($b_row = mysqli_fetch_assoc($b_res)) {
+        $bnames[] = $b_row['bname'];
+    }
+    if (!empty($bnames)) {
+        $coordinator_bname = implode(', ', $bnames);
+    }
 }
 ?>

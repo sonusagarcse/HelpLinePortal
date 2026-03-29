@@ -18,20 +18,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_credentials'])
     $student_id = (int)$_POST['student_id'];
     $login_id = mysqli_real_escape_string($con, $_POST['reg_login_id']);
     $password = mysqli_real_escape_string($con, $_POST['reg_password']);
+    
+    // Fetch assigned coordinator directly from supervisor table
+    $coord_query = mysqli_query($con, "SELECT assigned_coordinator_id FROM supervisor WHERE id = $supervisor_id");
+    $coord_row = mysqli_fetch_assoc($coord_query);
+    $assigned_coordinator = $coord_row ? (int)$coord_row['assigned_coordinator_id'] : 0;
 
-    if ($student_id > 0 && !empty($login_id) && !empty($password)) {
-        $update_query = "UPDATE registration SET reg_login_id = ?, reg_password = ?, reg_status = 2 WHERE id = ?";
+    if ($student_id > 0 && !empty($login_id) && !empty($password) && $assigned_coordinator > 0) {
+        $update_query = "UPDATE registration SET reg_login_id = ?, reg_password = ?, reg_status = 2, coordinator_approval_status = 1, assigned_coordinator = ? WHERE id = ?";
         $stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($stmt, "ssi", $login_id, $password, $student_id);
+        mysqli_stmt_bind_param($stmt, "ssii", $login_id, $password, $assigned_coordinator, $student_id);
         
         if (mysqli_stmt_execute($stmt)) {
-            $_SESSION['success_message'] = "Registration credentials saved and sent for Coordinator approval!";
+            $_SESSION['success_message'] = "Registration credentials saved and auto-routed for Coordinator approval!";
         } else {
             $_SESSION['error_message'] = "Error saving credentials: " . mysqli_error($con);
         }
-        header('Location: reg_approvals.php');
-        exit;
+    } elseif ($assigned_coordinator === 0) {
+        $_SESSION['error_message'] = "You do not have an Assigned Centre Coordinator. Please contact Admin to configure your routing.";
     }
+    header('Location: reg_approvals.php');
+    exit;
 }
 
 // Fetch students ready for registration (reg_status = 1) in supervisor's branches
@@ -51,6 +58,8 @@ if (!empty($supervisor_bids)) {
         $pending_registration[] = $row;
     }
 
+
+
     // Fetch past approvals (reg_status = 2 (Awaiting) or 3 (Approved))
     $past_approvals = [];
     $past_query = "SELECT r.*, b.bname, b.bcode, mc.name as category_name, 
@@ -59,7 +68,7 @@ if (!empty($supervisor_bids)) {
                   JOIN branch b ON r.bid = b.id
                   LEFT JOIN member_category mc ON r.mcategory = mc.id
                   LEFT JOIN caller c ON r.assigned_caller = c.id
-                  LEFT JOIN centre_coordinator cc ON r.bid = cc.bid
+                  LEFT JOIN centre_coordinator cc ON r.assigned_coordinator = cc.id
                   WHERE r.reg_status IN (2, 3) AND r.bid IN ($bids_list)
                   ORDER BY r.id DESC LIMIT 20";
     $p_result = mysqli_query($con, $past_query);
@@ -169,6 +178,10 @@ include 'includes/header.php';
                                                         <div class="mb-3">
                                                             <label class="form-label fw-bold small">Password *</label>
                                                             <input type="text" name="reg_password" class="form-control rounded-3" required placeholder="Generate or enter password">
+                                                        </div>
+                                                        <div class="bg-light p-3 rounded-4 mb-3 border border-light">
+                                                            <div class="small text-muted"><i class="fas fa-info-circle me-1"></i>Routing Information</div>
+                                                            <div class="fw-medium small mt-1 text-primary">Credentials will be automatically routed to your assigned Centre Coordinator for final approval.</div>
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer border-top-0 pb-4 px-4">

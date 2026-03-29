@@ -17,26 +17,49 @@ if (!$coord) {
     exit;
 }
 
+// Get assigned branches for coordinator
+$assigned_bids = [];
+$b_res = mysqli_query($con, "SELECT branch_id FROM coordinator_branches WHERE coordinator_id = $id AND status = 1");
+while ($b = mysqli_fetch_assoc($b_res)) {
+    $assigned_bids[] = $b['branch_id'];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = mysqli_real_escape_string($con, $_POST['username']);
     $name = mysqli_real_escape_string($con, $_POST['name']);
     $email = mysqli_real_escape_string($con, $_POST['email']);
     $mob = mysqli_real_escape_string($con, $_POST['mob']);
-    $bid = mysqli_real_escape_string($con, $_POST['bid']);
+    
+    $bids = isset($_POST['bids']) && is_array($_POST['bids']) ? $_POST['bids'] : [];
+    $legacy_bid = 0; // Legacy column fallback
+
     $status = isset($_POST['status']) ? 1 : 0;
 
     if (!empty($_POST['pass'])) {
         $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
         $u_query = "UPDATE centre_coordinator SET bid=?, username=?, name=?, email=?, mob=?, pass=?, status=? WHERE id=?";
         $u_stmt = mysqli_prepare($con, $u_query);
-        mysqli_stmt_bind_param($u_stmt, "isssssii", $bid, $username, $name, $email, $mob, $pass, $status, $id);
+        mysqli_stmt_bind_param($u_stmt, "isssssii", $legacy_bid, $username, $name, $email, $mob, $pass, $status, $id);
     } else {
         $u_query = "UPDATE centre_coordinator SET bid=?, username=?, name=?, email=?, mob=?, status=? WHERE id=?";
         $u_stmt = mysqli_prepare($con, $u_query);
-        mysqli_stmt_bind_param($u_stmt, "issssii", $bid, $username, $name, $email, $mob, $status, $id);
+        mysqli_stmt_bind_param($u_stmt, "issssii", $legacy_bid, $username, $name, $email, $mob, $status, $id);
     }
 
     if (mysqli_stmt_execute($u_stmt)) {
+        // Update branches
+        mysqli_query($con, "UPDATE coordinator_branches SET status = 0 WHERE coordinator_id = $id");
+        if (!empty($bids)) {
+            $b_query = "INSERT INTO coordinator_branches (coordinator_id, branch_id, assigned_date, status) VALUES (?, ?, ?, 1) ON DUPLICATE KEY UPDATE status = 1";
+            $b_stmt = mysqli_prepare($con, $b_query);
+            $date = date('Y-m-d');
+            foreach ($bids as $branch_id) {
+                $branch_id = (int)$branch_id;
+                mysqli_stmt_bind_param($b_stmt, "iis", $id, $branch_id, $date);
+                mysqli_stmt_execute($b_stmt);
+            }
+        }
+        
         header('Location: list.php?success=updated');
         exit;
     } else {
@@ -93,13 +116,13 @@ include('../../includes/header.php');
                             <input type="text" name="mob" class="form-control" value="<?php echo htmlspecialchars($coord['mob']); ?>" required>
                         </div>
                         <div class="col-md-6">
-                            <label>Branch</label>
-                            <select name="bid" class="form-control" required>
-                                <option value="">Select Branch</option>
+                            <label>Branch Assignment *</label>
+                            <select name="bids[]" class="form-control" multiple required style="height:120px;">
                                 <?php foreach($branches as $b): ?>
-                                    <option value="<?php echo $b['id']; ?>" <?php echo $coord['bid'] == $b['id'] ? 'selected' : ''; ?>><?php echo $b['bcode'].' - '.$b['bname']; ?></option>
+                                    <option value="<?php echo $b['id']; ?>" <?php echo in_array($b['id'], $assigned_bids) ? 'selected' : ''; ?>><?php echo htmlspecialchars($b['bcode'].' - '.$b['bname']); ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <small class="text-muted">Hold CTRL/CMD to select multiple branches</small>
                         </div>
                         <div class="col-md-6">
                             <label>New Password (leave blank to keep current)</label>

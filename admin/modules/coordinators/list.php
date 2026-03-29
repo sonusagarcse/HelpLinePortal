@@ -4,8 +4,13 @@ require_once(dirname(dirname(__DIR__)) . '/config/auth.php');
 
 $page_title = 'Centre Coordinators';
 
-$query = "SELECT c.*, b.bname, b.bcode FROM centre_coordinator c 
-          LEFT JOIN branch b ON c.bid = b.id 
+$query = "SELECT c.*, 
+          GROUP_CONCAT(b.bname SEPARATOR ', ') as branch_names,
+          GROUP_CONCAT(b.bcode SEPARATOR ', ') as branch_codes
+          FROM centre_coordinator c 
+          LEFT JOIN coordinator_branches cb ON c.id = cb.coordinator_id AND cb.status = 1
+          LEFT JOIN branch b ON cb.branch_id = b.id 
+          GROUP BY c.id
           ORDER BY c.id DESC";
 $result = mysqli_query($con, $query);
 $coordinators = [];
@@ -82,7 +87,15 @@ include('../../includes/header.php');
                                     <td><strong><?php echo htmlspecialchars($coord['name']); ?></strong></td>
                                     <td><?php echo htmlspecialchars($coord['mob']); ?></td>
                                     <td><?php echo htmlspecialchars($coord['email']); ?></td>
-                                    <td><?php echo htmlspecialchars($coord['bcode'] . ' - ' . $coord['bname']); ?></td>
+                                    <td>
+                                        <?php if ($coord['branch_names']): ?>
+                                            <span class="d-inline-block text-truncate" style="max-width: 200px;" title="<?php echo htmlspecialchars($coord['branch_codes']); ?>">
+                                                <?php echo htmlspecialchars($coord['branch_codes']); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-muted small">Not Assigned</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <?php if ($coord['status'] == 1): ?>
                                             <span class="badge bg-success">Active</span>

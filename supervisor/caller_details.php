@@ -3,7 +3,7 @@ session_start();
 
 // Check if supervisor is logged in
 if (!isset($_SESSION['supervisor_id'])) {
-    header('Location: ' . (isset($SITE_URL) ? $SITE_URL : '') . '/supervisor_login.php');
+    header('Location: ../supervisor_login.php');
     exit;
 }
 

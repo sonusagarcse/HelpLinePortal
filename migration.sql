@@ -53,3 +53,36 @@ ALTER TABLE `registration`
 -- Ensure all existing records have status 0 for new columns
 UPDATE `registration` SET `coordinator_approval_status` = 0 WHERE `coordinator_approval_status` IS NULL;
 UPDATE `registration` SET `reg_status` = 0 WHERE `reg_status` IS NULL;
+
+-- 6. Create Supervisor Branches Table
+CREATE TABLE IF NOT EXISTS `supervisor_branches` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `supervisor_id` int(11) NOT NULL,
+  `branch_id` int(11) NOT NULL,
+  `assigned_date` date NOT NULL,
+  `status` int(11) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `supervisor_id` (`supervisor_id`),
+  KEY `branch_id` (`branch_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 7. Create Centre Coordinator Branches Table (Multi-Branch Support)
+CREATE TABLE IF NOT EXISTS `coordinator_branches` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `coordinator_id` int(11) NOT NULL,
+  `branch_id` int(11) NOT NULL,
+  `assigned_date` date NOT NULL,
+  `status` int(11) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `coordinator_id` (`coordinator_id`),
+  KEY `branch_id` (`branch_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 8. Add Assigned Coordinator to Registration
+ALTER TABLE `registration` 
+  ADD COLUMN IF NOT EXISTS `assigned_coordinator` int(11) NOT NULL DEFAULT 0 AFTER `assigned_caller`;
+
+-- 9. Add Assigned Coordinator to Supervisor
+ALTER TABLE `supervisor` 
+  ADD COLUMN IF NOT EXISTS `assigned_coordinator_id` int(11) NOT NULL DEFAULT 0 AFTER `mnid`;
+
