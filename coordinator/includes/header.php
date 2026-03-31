@@ -22,28 +22,53 @@
             --slate-700: #334155;
             --slate-900: #0f172a;
             --sidebar-width: 280px;
-            --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --card-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #fafbfc;
+            background-color: #f8fafc;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,0.03) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.03) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.03) 0, transparent 50%);
+            background-attachment: fixed;
             color: var(--slate-700);
             overflow-x: hidden;
             min-height: 100vh;
         }
 
+        /* Ambient Orbs */
+        .ambient-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.6;
+            animation: float 20s infinite ease-in-out;
+            pointer-events: none;
+        }
+        .orb-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: rgba(74, 108, 247, 0.08); }
+        .orb-2 { bottom: -10%; right: -10%; width: 60vw; height: 60vw; background: rgba(139, 92, 246, 0.08); animation-delay: -10s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(5%, 5%); }
+        }
+
         h1, h2, h3, h4, .fw-bold {
             font-family: 'Outfit', sans-serif;
             color: var(--slate-900);
-            letter-spacing: -0.025em;
+            letter-spacing: -0.02em;
         }
 
-        /* Minimal Sidebar (SaaS Style) */
+        /* Minimal Sidebar (True Glass) */
         #sidebar {
             width: var(--sidebar-width);
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.6) !important;
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
             color: var(--slate-700);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             min-height: 100vh;
@@ -51,7 +76,7 @@
             left: 0;
             top: 0;
             z-index: 1050;
-            border-right: 1px solid var(--slate-200);
+            border-right: 1px solid rgba(255, 255, 255, 0.8) !important;
         }
 
         #sidebar.active {
@@ -92,13 +117,16 @@
         }
 
         #sidebar ul li a:hover {
-            background: var(--slate-100);
-            color: var(--slate-900);
+            background: rgba(255, 255, 255, 0.6);
+            color: var(--primary-indigo);
+            transform: translateX(4px);
         }
 
         #sidebar ul li a.active {
-            background: rgba(74, 108, 247, 0.08);
+            background: rgba(255, 255, 255, 0.9);
             color: var(--primary-indigo);
+            box-shadow: inset 3px 0 0 var(--primary-indigo), 0 4px 15px rgba(0,0,0,0.02);
+            border: 1px solid rgba(255,255,255,0.6);
         }
 
         #sidebar ul li a i {
@@ -138,17 +166,32 @@
         /* Minimal Cards */
         .minimal-card {
             background: #ffffff;
-            border-radius: 12px;
+            border-radius: 16px;
             border: 1px solid var(--slate-200);
             box-shadow: var(--card-shadow);
             padding: 24px;
             margin-bottom: 24px;
-            transition: box-shadow 0.2s;
+            transition: all 0.3s ease;
         }
 
         .minimal-card:hover {
             box-shadow: var(--card-shadow-hover);
+            transform: translateY(-2px);
         }
+
+        /* Glass Card Premium Utilities (True Glass) */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.6) !important;
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.8) !important;
+            border-radius: 20px !important;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05) !important;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .action-btn { transition: all 0.2s ease; }
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1) !important; }
 
         /* Stat Grid Hub */
         .hub-option {
@@ -258,6 +301,9 @@
     </style>
 </head>
 <body>
+    <!-- Ambient Background Elements -->
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 

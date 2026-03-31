@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Removed single bid, getting array of bids
     $bids = isset($_POST['bids']) && is_array($_POST['bids']) ? $_POST['bids'] : [];
     $mnid = (int)$_POST['mnid']; // Manager ID
-    $assigned_coordinator_id = (int)$_POST['assigned_coordinator_id']; // Coordinator ID
+    $assigned_coordinator_id = 0; // Coordinator ID - Now routed based on branch
     $username = mysqli_real_escape_string($con, $_POST['username']);
     $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
 
@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accountno = mysqli_real_escape_string($con, $_POST['accountno']);
 
     $status = isset($_POST['status']) ? 1 : 0;
+    $commission_per_reg = (float)$_POST['commission_per_reg'];
     $date = date('Y-m-d');
     $asession = date('Y');
 
@@ -54,12 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // Insert supervisor (setting legacy bid to 0)
         $legacy_bid = 0;
-        $query = "INSERT INTO supervisor (mnid, assigned_coordinator_id, username, regno, name, father, mother, asession, dob, age, doj, gender, email, mob, state, dis, pincode, category, marital_status, qualification, aadhar, othermob_no, pass, address, bank, bank_branch, ifsccode, accountno, bid, status, date, reg_type) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+        $query = "INSERT INTO supervisor (mnid, assigned_coordinator_id, username, regno, name, father, mother, asession, dob, age, doj, gender, email, mob, state, dis, pincode, category, marital_status, qualification, aadhar, othermob_no, pass, address, bank, bank_branch, ifsccode, accountno, bid, status, date, reg_type, commission_per_reg) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)";
         $stmt = mysqli_prepare($con, $query);
+        $types = "iisssssssissssssssssssssssssiisd";
         mysqli_stmt_bind_param(
             $stmt,
-            "iiissssisissssssssssssssssssiis",
+            $types,
             $mnid,
             $assigned_coordinator_id,
             $username,
@@ -90,7 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $accountno,
             $legacy_bid,
             $status,
-            $date
+            $date,
+            $commission_per_reg
         );
 
         if (mysqli_stmt_execute($stmt)) {
@@ -210,19 +213,6 @@ include('../../includes/header.php');
                                 <?php endforeach; ?>
                             </select>
                             <small class="text-muted">This supervisor will report to the selected manager</small>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label text-primary"><i class="fas fa-network-wired me-1"></i>Assigned Centre Coordinator *</label>
-                            <select name="assigned_coordinator_id" class="form-select border-primary" required>
-                                <option value="">Select Coordinator</option>
-                                <?php foreach ($coordinators as $coord): ?>
-                                    <option value="<?php echo $coord['id']; ?>">
-                                        <?php echo htmlspecialchars($coord['name']) . ' (' . htmlspecialchars($coord['username']) . ')'; ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <small class="text-muted">Credentials created by this supervisor will auto-route to this coordinator.</small>
                         </div>
 
                         <!-- Personal Information -->
@@ -396,6 +386,17 @@ include('../../includes/header.php');
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Account Number</label>
                             <input type="text" name="accountno" class="form-control">
+                        </div>
+
+                        <!-- Commission Setup -->
+                        <div class="col-md-12 mt-3">
+                            <h5 class="mb-3 text-primary"><i class="fas fa-hand-holding-dollar me-2"></i>Commission Setup</h5>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Commission Per Registration (₹) *</label>
+                            <input type="number" step="0.01" name="commission_per_reg" class="form-control border-primary" value="0.00" required>
+                            <small class="text-muted">Set the individual commission rate for this supervisor.</small>
                         </div>
 
                         <!-- Login Credentials -->

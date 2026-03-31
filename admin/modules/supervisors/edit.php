@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $address = mysqli_real_escape_string($con, $_POST['address']);
     $bids = isset($_POST['bids']) && is_array($_POST['bids']) ? $_POST['bids'] : [];
     $mnid = (int)$_POST['mnid']; // Manager ID
-    $assigned_coordinator_id = (int)$_POST['assigned_coordinator_id']; // Coordinator ID
+    $assigned_coordinator_id = 0; // Coordinator ID - Now routed based on branch
     $username = mysqli_real_escape_string($con, $_POST['username']);
     $status = isset($_POST['status']) ? 1 : 0;
 
@@ -58,19 +58,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bank_branch = mysqli_real_escape_string($con, $_POST['bank_branch']);
     $ifsccode = mysqli_real_escape_string($con, $_POST['ifsccode']);
     $accountno = mysqli_real_escape_string($con, $_POST['accountno']);
+    $commission_per_reg = (float)$_POST['commission_per_reg'];
 
     $legacy_bid = 0; // Set legacy bid to 0
 
     // Update password only if provided
     if (!empty($_POST['pass'])) {
         $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
-        $update_query = "UPDATE supervisor SET mnid=?, assigned_coordinator_id=?, username=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, pass=?, address=?, bank=?, bank_branch=?, ifsccode=?, accountno=?, bid=?, status=? WHERE id=?";
+        $update_query = "UPDATE supervisor SET mnid=?, assigned_coordinator_id=?, username=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, pass=?, address=?, bank=?, bank_branch=?, ifsccode=?, accountno=?, bid=?, status=?, commission_per_reg=? WHERE id=?";
         $update_stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($update_stmt, "iiisssssissssssssssssssssssiii", $mnid, $assigned_coordinator_id, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bank, $bank_branch, $ifsccode, $accountno, $legacy_bid, $status, $id);
+        // Correct Types: i(mni), i(coord), s(user), s(reg), s(name), s(fath), s(moth), s(dob), i(age), s(doj), s(gend), s(emai), s(mob), s(stat), s(dis), s(pin), s(cat), s(marit), s(qual), s(aadh), s(othe), s(pass), s(addr), s(bank), s(bb), s(ifsc), s(acc), i(bid), i(stat), d(comm), i(id)
+        $types = "iissssssissssssssssssssssssiidi"; // Exactly 31 characters
+        mysqli_stmt_bind_param($update_stmt, $types, $mnid, $assigned_coordinator_id, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bank, $bank_branch, $ifsccode, $accountno, $legacy_bid, $status, $commission_per_reg, $id);
     } else {
-        $update_query = "UPDATE supervisor SET mnid=?, assigned_coordinator_id=?, username=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, address=?, bank=?, bank_branch=?, ifsccode=?, accountno=?, bid=?, status=? WHERE id=?";
+        $update_query = "UPDATE supervisor SET mnid=?, assigned_coordinator_id=?, username=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, address=?, bank=?, bank_branch=?, ifsccode=?, accountno=?, bid=?, status=?, commission_per_reg=? WHERE id=?";
         $update_stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($update_stmt, "iiisssssisssssssssssssssssiii", $mnid, $assigned_coordinator_id, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $address, $bank, $bank_branch, $ifsccode, $accountno, $legacy_bid, $status, $id);
+        // Correct Types: i(mni), i(coord), s(user), s(reg), s(name), s(fath), s(moth), s(dob), i(age), s(doj), s(gend), s(emai), s(mob), s(stat), s(dis), s(pin), s(cat), s(marit), s(qual), s(aadh), s(othe), s(addr), s(bank), s(bb), s(ifsc), s(acc), i(bid), i(stat), d(comm), i(id)
+        $types = "iissssssisssssssssssssssssiidi"; // Exactly 30 characters
+        mysqli_stmt_bind_param($update_stmt, $types, $mnid, $assigned_coordinator_id, $username, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $address, $bank, $bank_branch, $ifsccode, $accountno, $legacy_bid, $status, $commission_per_reg, $id);
     }
 
     if (mysqli_stmt_execute($update_stmt)) {
@@ -183,19 +188,6 @@ include('../../includes/header.php');
                                 <?php endforeach; ?>
                             </select>
                             <small class="text-muted">This supervisor will report to the selected manager</small>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label text-primary"><i class="fas fa-network-wired me-1"></i>Assigned Centre Coordinator *</label>
-                            <select name="assigned_coordinator_id" class="form-select border-primary" required>
-                                <option value="">Select Coordinator</option>
-                                <?php foreach ($coordinators as $coord): ?>
-                                    <option value="<?php echo $coord['id']; ?>" <?php echo isset($supervisor['assigned_coordinator_id']) && $supervisor['assigned_coordinator_id'] == $coord['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($coord['name']) . ' (' . htmlspecialchars($coord['username']) . ')'; ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <small class="text-muted">Credentials created by this supervisor will auto-route to this coordinator.</small>
                         </div>
 
                         <!-- Personal Information -->
@@ -391,6 +383,26 @@ include('../../includes/header.php');
                             <label class="form-label">Account Number</label>
                             <input type="text" name="accountno" class="form-control"
                                 value="<?php echo htmlspecialchars($supervisor['accountno']); ?>">
+                        </div>
+
+                        <!-- Commission & Wallet -->
+                        <div class="col-md-12 mt-3">
+                            <h5 class="mb-3 text-primary"><i class="fas fa-hand-holding-dollar me-2"></i>Commission & Wallet</h5>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Commission Per Registration (₹) *</label>
+                            <input type="number" step="0.01" name="commission_per_reg" class="form-control border-primary"
+                                value="<?php echo htmlspecialchars($supervisor['commission_per_reg']); ?>" required>
+                            <small class="text-muted">This amount will be credited to the supervisor's wallet for every registration approved by a coordinator.</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Current Wallet Balance</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="text" class="form-control bg-light" value="<?php echo number_format($supervisor['wallet_balance'], 2); ?>" readonly>
+                            </div>
                         </div>
 
                         <!-- Login Credentials -->

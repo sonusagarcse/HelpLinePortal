@@ -18,12 +18,10 @@ if (isset($_SESSION['supervisor_id']) && isset($con)) {
             $_SESSION['supervisor_bid'] = 0;
         }
     }
-    
-    // 2. Sync assigned coordinator
-    $coord_query = mysqli_query($con, "SELECT assigned_coordinator_id FROM supervisor WHERE id = " . (int)$_SESSION['supervisor_id']);
-    if ($coord_query && $coord_row = mysqli_fetch_assoc($coord_query)) {
-        $_SESSION['assigned_coordinator_id'] = (int)$coord_row['assigned_coordinator_id'];
-    }
+    // 2. Fetch Wallet Balance
+    $wallet_query = mysqli_query($con, "SELECT wallet_balance FROM supervisor WHERE id = " . (int)$_SESSION['supervisor_id']);
+    $wallet_data = mysqli_fetch_assoc($wallet_query);
+    $wallet_balance = $wallet_data['wallet_balance'] ?? 0.00;
 }
 ?>
 <!DOCTYPE html>
@@ -483,6 +481,10 @@ if (isset($_SESSION['supervisor_id']) && isset($con)) {
                     <i class="fas fa-chart-pie"></i>
                     <span>Reports</span>
                 </a>
+                <a href="wallet.php" class="nav-item-link <?php echo $current_page == 'wallet.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-wallet text-warning"></i>
+                    <span>My Wallet</span>
+                </a>
             </div>
             
             <div class="sidebar-footer">
@@ -502,6 +504,12 @@ if (isset($_SESSION['supervisor_id']) && isset($con)) {
                 </button>
                 
                 <div class="header-profile">
+                    <div class="me-4 d-none d-md-flex">
+                        <div class="bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 px-3 py-2 rounded-pill shadow-sm d-flex align-items-center gap-2">
+                            <i class="fas fa-wallet text-warning fs-5"></i>
+                            <span class="fw-bold">₹<?php echo number_format($wallet_balance, 2); ?></span>
+                        </div>
+                    </div>
                     <div class="profile-info d-none d-sm-flex">
                         <span class="profile-name"><?php echo htmlspecialchars($supervisor_name ?? 'User'); ?></span>
                         <span class="profile-role">Supervisor</span>

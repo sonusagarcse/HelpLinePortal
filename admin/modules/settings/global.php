@@ -52,7 +52,7 @@ include('../../includes/header.php');
                     <form action="save_settings.php" method="POST">
                         <div class="row">
                             <?php foreach ($settings as $key => $value): 
-                                if ($key == 'id') continue;
+                                if ($key == 'id' || $key == 'supervisor_commission') continue;
                             ?>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label"><?php echo ucwords(str_replace('_', ' ', $key)); ?></label>

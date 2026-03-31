@@ -1,0 +1,108 @@
+<?php
+require_once(dirname(dirname(__DIR__)) . '/config/config.php');
+require_once(dirname(dirname(__DIR__)) . '/config/auth.php');
+
+$page_title = 'Edit WhatsApp Template';
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+// Fetch existing template
+$q = mysqli_query($con, "SELECT * FROM whatsapp_templates WHERE id = $id");
+$t = mysqli_fetch_assoc($q);
+
+if (!$t) {
+    header('Location: list.php?error=not_found');
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $title = mysqli_real_escape_string($con, $_POST['title']);
+    $message = mysqli_real_escape_string($con, $_POST['message']);
+    $status = isset($_POST['status']) ? 1 : 0;
+
+    $stmt = mysqli_prepare($con, "UPDATE whatsapp_templates SET title=?, message=?, status=? WHERE id=?");
+    mysqli_stmt_bind_param($stmt, "ssii", $title, $message, $status, $id);
+
+    if (mysqli_stmt_execute($stmt)) {
+        header('Location: list.php?success=1');
+        exit;
+    } else {
+        $error = "Error updating template: " . mysqli_error($con);
+    }
+}
+
+include('../../includes/header.php');
+?>
+
+<div class="wrapper">
+    <?php include('../../includes/sidebar.php'); ?>
+
+    <div id="content">
+        <nav class="top-navbar">
+            <button type="button" id="sidebarCollapse" class="btn btn-link"><i class="fas fa-bars"></i></button>
+            <div class="user-menu">
+                <div class="user-info">
+                    <div class="name"><?php echo $admin_name; ?></div>
+                    <div class="role">Admin</div>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="fas fa-user-circle fa-2x"></i></button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="../../logout.php">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="main-content">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1>Edit Template</h1>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="../../index.php">Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="list.php">WhatsApp Templates</a></li>
+                                <li class="breadcrumb-item active">Edit</li>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <?php if (isset($error)): ?>
+                <div class="alert alert-danger"><?php echo $error; ?></div>
+            <?php endif; ?>
+
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-4">
+                    <form method="POST" action="">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Template Title *</label>
+                                <input type="text" name="title" class="form-control" value="<?php echo htmlspecialchars($t['title']); ?>" required>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Message Content *</label>
+                                <textarea name="message" class="form-control" rows="8" required><?php echo htmlspecialchars($t['message']); ?></textarea>
+                                <div class="form-text">Use <code>[name]</code> to automatically insert the student's name.</div>
+                            </div>
+                            <div class="col-md-12 mb-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="status" id="status" <?php echo $t['status'] == 1 ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="status">Active (Available for Callers)</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary px-5 rounded-pill">
+                                <i class="fas fa-save me-2"></i>Update Template
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php include('../../includes/footer.php'); ?>

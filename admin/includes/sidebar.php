@@ -93,6 +93,8 @@ $admin_base = $protocol . '://' . $host . $base_dir . '/admin/';
             <ul class="collapse list-unstyled" id="querySubmenu" style="padding-left: 20px;">
                 <li><a href="<?php echo $admin_base; ?>modules/queries/list.php"><i class="fas fa-question-circle"></i>
                         Queries</a></li>
+                <li><a href="<?php echo $admin_base; ?>modules/whatsapp/list.php"><i class="fab fa-whatsapp"></i>
+                        WhatsApp Templates</a></li>
                 <li><a href="<?php echo $admin_base; ?>modules/queries/allotment.php"><i class="fas fa-tasks"></i> Data
                         Allotment</a></li>
                 <li><a href="<?php echo $admin_base; ?>modules/contact/list.php"><i class="fas fa-envelope"></i> Contact

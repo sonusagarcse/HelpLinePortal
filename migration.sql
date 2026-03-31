@@ -1,88 +1,41 @@
 -- SQL Migration Script for Yuva Helpline Project Updates
--- Generated on 2026-03-28
+-- Generated on 2026-03-31 (Latest Updates Only)
 
--- 1. Create Centre Coordinator Table
-CREATE TABLE IF NOT EXISTS `centre_coordinator` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `bid` int(11) NOT NULL,
-  `username` varchar(100) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `mob` varchar(20) NOT NULL,
-  `pass` varchar(255) NOT NULL,
-  `status` tinyint(1) NOT NULL DEFAULT 1,
-  `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- 1. Supervisor Wallet System
+ALTER TABLE `supervisor` 
+  ADD COLUMN IF NOT EXISTS `wallet_balance` DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER `status`;
 
--- 2. Create Caller Branches (Multi-Branch Assignment)
-CREATE TABLE IF NOT EXISTS `caller_branches` (
+-- 2. Supervisor Earnings Table (Commission Tracking)
+CREATE TABLE IF NOT EXISTS `supervisor_earnings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `caller_id` int(11) NOT NULL,
-  `branch_id` int(11) NOT NULL,
-  `category_id` int(11) DEFAULT 0,
-  `assigned_date` date NOT NULL,
-  `status` int(11) NOT NULL DEFAULT 1,
-  PRIMARY KEY (`id`),
-  KEY `caller_id` (`caller_id`),
-  KEY `branch_id` (`branch_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 3. Create Caller Earnings (Commission Tracking)
-CREATE TABLE IF NOT EXISTS `caller_earnings` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `caller_id` int(11) NOT NULL,
+  `supervisor_id` int(11) NOT NULL,
   `student_id` int(11) NOT NULL,
   `amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `description` varchar(255) DEFAULT 'Registration Approval Commission',
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `caller_id` (`caller_id`),
+  KEY `supervisor_id` (`supervisor_id`),
   KEY `student_id` (`student_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 4. Update Registration Table Schema
--- Adding columns for Coordinator approvals and Student Credentials
-ALTER TABLE `registration` 
-  ADD COLUMN IF NOT EXISTS `coordinator_approval_status` int(11) NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS `reg_status` int(11) NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS `caller_remark` text DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS `reg_login_id` varchar(100) DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS `reg_password` varchar(100) DEFAULT NULL;
-
--- 5. Standardize Status Defaults (Optional but recommended)
--- Ensure all existing records have status 0 for new columns
-UPDATE `registration` SET `coordinator_approval_status` = 0 WHERE `coordinator_approval_status` IS NULL;
-UPDATE `registration` SET `reg_status` = 0 WHERE `reg_status` IS NULL;
-
--- 6. Create Supervisor Branches Table
-CREATE TABLE IF NOT EXISTS `supervisor_branches` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `supervisor_id` int(11) NOT NULL,
-  `branch_id` int(11) NOT NULL,
-  `assigned_date` date NOT NULL,
-  `status` int(11) NOT NULL DEFAULT 1,
-  PRIMARY KEY (`id`),
-  KEY `supervisor_id` (`supervisor_id`),
-  KEY `branch_id` (`branch_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 7. Create Centre Coordinator Branches Table (Multi-Branch Support)
-CREATE TABLE IF NOT EXISTS `coordinator_branches` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `coordinator_id` int(11) NOT NULL,
-  `branch_id` int(11) NOT NULL,
-  `assigned_date` date NOT NULL,
-  `status` int(11) NOT NULL DEFAULT 1,
-  PRIMARY KEY (`id`),
-  KEY `coordinator_id` (`coordinator_id`),
-  KEY `branch_id` (`branch_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 8. Add Assigned Coordinator to Registration
-ALTER TABLE `registration` 
-  ADD COLUMN IF NOT EXISTS `assigned_coordinator` int(11) NOT NULL DEFAULT 0 AFTER `assigned_caller`;
-
--- 9. Add Assigned Coordinator to Supervisor
+-- 3. Supervisor Individual Commission System
 ALTER TABLE `supervisor` 
-  ADD COLUMN IF NOT EXISTS `assigned_coordinator_id` int(11) NOT NULL DEFAULT 0 AFTER `mnid`;
+  ADD COLUMN IF NOT EXISTS `commission_per_reg` DECIMAL(10,2) DEFAULT 0.00 AFTER `wallet_balance`;
+
+-- 4. WhatsApp Template Management System
+CREATE TABLE IF NOT EXISTS `whatsapp_templates` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `title` VARCHAR(255) NOT NULL,
+  `message` TEXT NOT NULL,
+  `status` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Seed Initial WhatsApp Templates
+INSERT INTO `whatsapp_templates` (`title`, `message`) VALUES 
+('Default Welcome', 'Hello [name], this is from Yuva Helpline.'),
+('Document Required', 'Hello [name], we noticed some of your documents are missing. Please send them as soon as possible.'),
+('Fee Reminder', 'Hello [name], this is a reminder regarding your course fee payment. Please process it soon.'),
+('Follow-up', 'Hello [name], I tried calling you earlier. Please call back when you\'re available.');
 

@@ -23,10 +23,9 @@ $latest_mq_subquery = "SELECT studentid, status, nextdate, des
                       WHERE callerid = $caller_id 
                       AND id IN (SELECT MAX(id) FROM mquery WHERE callerid = $caller_id GROUP BY studentid)";
 
+// 1. Total Assigned Statistics (Absolute Total)
 $total_query = "SELECT COUNT(*) as total FROM registration r 
-                LEFT JOIN ($latest_mq_subquery) mq_latest ON r.id = mq_latest.studentid
-                WHERE $where_clause 
-                AND (mq_latest.status NOT IN (0, 2) OR mq_latest.status IS NULL)";
+                WHERE $where_clause";
 $result = mysqli_query($con, $total_query);
 $stats['total_assigned'] = mysqli_fetch_assoc($result)['total'];
 
@@ -38,18 +37,21 @@ $completed_query = "SELECT COUNT(DISTINCT r.id) as total FROM registration r
 $result_unique = mysqli_query($con, $completed_query);
 $stats['completed'] = mysqli_fetch_assoc($result_unique)['total'];
 
-// 3. Pending Data
+// 3. Pending Action (Students needing a call right now)
+// Exclude students who have already been called today by this caller
+$handled_today_subquery = "SELECT studentid FROM mquery WHERE callerid = $caller_id AND DATE(date) = CURDATE()";
 $precise_pending_query = "SELECT COUNT(*) as total FROM registration r
                          LEFT JOIN ($latest_mq_subquery) mq_latest ON r.id = mq_latest.studentid
                          WHERE $where_clause
                          AND (mq_latest.status IS NULL OR mq_latest.status = 1) 
                          AND (r.reg_status = 0 AND r.coordinator_approval_status = 0)
-                         AND (mq_latest.nextdate IS NULL OR mq_latest.nextdate <= CURDATE())";
+                         AND (mq_latest.nextdate IS NULL OR mq_latest.nextdate <= CURDATE())
+                         AND r.id NOT IN ($handled_today_subquery)";
 $result = mysqli_query($con, $precise_pending_query);
 $stats['pending'] = mysqli_fetch_assoc($result)['total'];
 
-// Today's calls
-$result = mysqli_query($con, "SELECT COUNT(*) as total FROM mquery WHERE callerid = $caller_id AND DATE(date) = CURDATE()");
+// Today's calls (Unique Students handled today)
+$result = mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND DATE(date) = CURDATE()");
 $stats['today'] = mysqli_fetch_assoc($result)['total'];
 
 // Total Earnings (from Coordinator Approvals)
@@ -69,6 +71,7 @@ $query = "SELECT r.*, r.id as student_id, r.regno as student_regno, r.name as st
           LEFT JOIN branch b ON r.bid = b.id
           LEFT JOIN ($latest_mq_subquery) mq_latest ON r.id = mq_latest.studentid
           WHERE $where_clause
+          AND r.id NOT IN ($handled_today_subquery)
           HAVING (latest_status IS NULL OR latest_status = 1) AND (nextdate IS NULL OR nextdate <= CURDATE())
           ORDER BY (nextdate IS NOT NULL) DESC, nextdate ASC, r.id DESC";
 $assigned_data = [];

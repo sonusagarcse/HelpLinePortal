@@ -19,23 +19,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_credentials'])
     $login_id = mysqli_real_escape_string($con, $_POST['reg_login_id']);
     $password = mysqli_real_escape_string($con, $_POST['reg_password']);
     
-    // Fetch assigned coordinator directly from supervisor table
-    $coord_query = mysqli_query($con, "SELECT assigned_coordinator_id FROM supervisor WHERE id = $supervisor_id");
+    // 1. Fetch the branch ID for this specific registration
+    $reg_data_query = mysqli_query($con, "SELECT bid FROM registration WHERE id = $student_id");
+    $reg_data_row = mysqli_fetch_assoc($reg_data_query);
+    $bid = $reg_data_row ? (int)$reg_data_row['bid'] : 0;
+
+    // 2. Fetch the first available coordinator for this specific branch
+    $coord_query = mysqli_query($con, "SELECT coordinator_id FROM coordinator_branches WHERE branch_id = $bid AND status = 1 LIMIT 1");
     $coord_row = mysqli_fetch_assoc($coord_query);
-    $assigned_coordinator = $coord_row ? (int)$coord_row['assigned_coordinator_id'] : 0;
+    $assigned_coordinator = $coord_row ? (int)$coord_row['coordinator_id'] : 0;
 
     if ($student_id > 0 && !empty($login_id) && !empty($password) && $assigned_coordinator > 0) {
-        $update_query = "UPDATE registration SET reg_login_id = ?, reg_password = ?, reg_status = 2, coordinator_approval_status = 1, assigned_coordinator = ? WHERE id = ?";
+        $update_query = "UPDATE registration SET reg_login_id = ?, reg_password = ?, reg_status = 2, coordinator_approval_status = 1, assigned_coordinator = ?, submitted_by_supervisor = ? WHERE id = ?";
         $stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($stmt, "ssii", $login_id, $password, $assigned_coordinator, $student_id);
+        mysqli_stmt_bind_param($stmt, "ssiii", $login_id, $password, $assigned_coordinator, $supervisor_id, $student_id);
         
         if (mysqli_stmt_execute($stmt)) {
-            $_SESSION['success_message'] = "Registration credentials saved and auto-routed for Coordinator approval!";
+            $_SESSION['success_message'] = "Registration credentials saved and auto-routed to Branch Coordinator!";
         } else {
             $_SESSION['error_message'] = "Error saving credentials: " . mysqli_error($con);
         }
     } elseif ($assigned_coordinator === 0) {
-        $_SESSION['error_message'] = "You do not have an Assigned Centre Coordinator. Please contact Admin to configure your routing.";
+        $_SESSION['error_message'] = "No Coordinator is currently assigned to this branch. Please contact Admin.";
     }
     header('Location: reg_approvals.php');
     exit;
@@ -181,7 +186,7 @@ include 'includes/header.php';
                                                         </div>
                                                         <div class="bg-light p-3 rounded-4 mb-3 border border-light">
                                                             <div class="small text-muted"><i class="fas fa-info-circle me-1"></i>Routing Information</div>
-                                                            <div class="fw-medium small mt-1 text-primary">Credentials will be automatically routed to your assigned Centre Coordinator for final approval.</div>
+                                                            <div class="fw-medium small mt-1 text-primary">Credentials will be automatically routed to the Branch Coordinator for final approval.</div>
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer border-top-0 pb-4 px-4">

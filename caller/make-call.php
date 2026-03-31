@@ -378,12 +378,12 @@ if ($student):
         $student['pincode'] ?? ''
     ]);
 
-    // Re-fetch settings for whatsapp message if not already available
-    $set_res = mysqli_query($con, "SELECT whatsapp_msg FROM global_setting WHERE id = 1");
-    $settings = mysqli_fetch_assoc($set_res);
-    $wa_msg = $settings['whatsapp_msg'] ?? '';
-    $wa_msg = str_replace('[name]', $student['name'], $wa_msg);
-    $wa_url = "https://wa.me/91" . $student['mob'] . "?text=" . urlencode($wa_msg);
+    // Fetch available WhatsApp templates
+    $templates_query = mysqli_query($con, "SELECT * FROM whatsapp_templates WHERE status = 1 ORDER BY title ASC");
+    $wa_templates = [];
+    while ($row = mysqli_fetch_assoc($templates_query)) {
+        $wa_templates[] = $row;
+    }
 endif;
 
 if ($student):
@@ -434,10 +434,9 @@ if ($student):
                                         </a>
                                     </div>
                                     <div class="col-md-4">
-                                        <a href="<?php echo $wa_url; ?>" target="_blank"
-                                            class="btn wa-btn btn-lg w-100 call-action-btn shadow">
+                                        <button type="button" class="btn wa-btn btn-lg w-100 call-action-btn shadow" data-bs-toggle="modal" data-bs-target="#waTemplateModal">
                                             <i class="fab fa-whatsapp me-3"></i>CHAT
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -654,6 +653,67 @@ endif; ?>
             </div>
         </div>
     </div>
+
+    <!-- WhatsApp Template Selection Modal -->
+    <div class="modal fade" id="waTemplateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold"><i class="fab fa-whatsapp text-success me-2"></i>Select Message Template</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-4">Choose a message to send to <strong><?php echo htmlspecialchars($student['name']); ?></strong>.</p>
+                    
+                    <div class="list-group list-group-flush gap-2">
+                        <?php if (empty($wa_templates)): ?>
+                            <div class="text-center py-4">
+                                <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+                                <p class="mb-0">No WhatsApp templates found.</p>
+                                <small class="text-muted">Please contact admin to add templates.</small>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($wa_templates as $wt): 
+                                // Prepare the message for JS
+                                $raw_msg = $wt['message'];
+                                $formatted_msg = str_replace('[name]', $student['name'], $raw_msg);
+                                $wa_link = "https://wa.me/91" . $student['mob'] . "?text=" . urlencode($formatted_msg);
+                            ?>
+                                <a href="<?php echo $wa_link; ?>" target="_blank" class="list-group-item list-group-item-action border rounded-3 p-3 wa-template-item" onclick="closeWAModal()">
+                                    <div class="d-flex w-100 justify-content-between mb-1">
+                                        <h6 class="mb-1 fw-bold"><?php echo htmlspecialchars($wt['title']); ?></h6>
+                                        <i class="fas fa-chevron-right text-muted small"></i>
+                                    </div>
+                                    <small class="text-muted text-truncate d-block" style="max-width: 100%;"><?php echo htmlspecialchars($formatted_msg); ?></small>
+                                </a>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .wa-template-item {
+            transition: all 0.2s;
+        }
+        .wa-template-item:hover {
+            border-color: #25D366 !important;
+            background-color: #f0fdf4 !important;
+            transform: scale(1.02);
+            z-index: 5;
+        }
+    </style>
+
+    <script>
+        function closeWAModal() {
+            setTimeout(() => {
+                var modal = bootstrap.Modal.getInstance(document.getElementById('waTemplateModal'));
+                if (modal) modal.hide();
+            }, 500);
+        }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
