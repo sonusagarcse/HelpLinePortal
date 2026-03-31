@@ -15,8 +15,8 @@ if (!$t) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title = mysqli_real_escape_string($con, $_POST['title']);
-    $message = mysqli_real_escape_string($con, $_POST['message']);
+    $title = $_POST['title'];
+    $message = $_POST['message'];
     $status = isset($_POST['status']) ? 1 : 0;
 
     $stmt = mysqli_prepare($con, "UPDATE whatsapp_templates SET title=?, message=?, status=? WHERE id=?");
