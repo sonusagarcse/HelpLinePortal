@@ -140,16 +140,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Handle Status and Special Workflow
         if (isset($_POST['reg_ready'])) {
-            $reg_update_sql .= ", reg_status = 1";
+            $reg_update_sql .= ", reg_status = 1, reg_ready_at = IF(reg_status = 0, NOW(), reg_ready_at)";
+        } else {
+            $reg_update_sql .= ", reg_status = IF(reg_status = 1, 0, reg_status), reg_ready_at = IF(reg_status = 1, NULL, reg_ready_at)";
         }
 
-        // If status is 0 (Resolved) and not rejected, it's pending coordinator approval
-        if ($status == 0 && !$is_rejected) {
-            $reg_update_sql .= ", coordinator_approval_status = 1";
+        // Direct Admission Coordinator Approval
+        if (isset($_POST['status']) && !$is_rejected) {
+            $reg_update_sql .= ", coordinator_approval_status = IF(coordinator_approval_status = 0, 1, coordinator_approval_status)";
+        } else {
+            $reg_update_sql .= ", coordinator_approval_status = IF(coordinator_approval_status = 1, 0, coordinator_approval_status)";
         }
 
         if ($is_rejected) {
             $reg_update_sql .= ", status = 0";
+        } else {
+            $reg_update_sql .= ", status = IF(status = 0, 1, status)";
         }
         
         $reg_update_sql .= " WHERE id = ?";
@@ -547,7 +553,7 @@ endif; ?>
                             </div>
                             
                             <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox" role="switch" name="reg_ready" id="reg_ready">
+                                <input class="form-check-input" type="checkbox" role="switch" name="reg_ready" id="reg_ready" <?php echo (isset($student['reg_status']) && $student['reg_status'] >= 1) ? 'checked' : ''; ?>>
                                 <label class="form-check-label fw-semibold text-primary" for="reg_ready">
                                     <i class="fas fa-id-card me-1"></i> Ready for Registration
                                 </label>
@@ -555,14 +561,14 @@ endif; ?>
                             </div>
 
                             <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox" role="switch" name="status" id="completed">
+                                <input class="form-check-input" type="checkbox" role="switch" name="status" id="completed" <?php echo (isset($student['coordinator_approval_status']) && $student['coordinator_approval_status'] >= 1) ? 'checked' : ''; ?>>
                                 <label class="form-check-label fw-semibold" for="completed">Admission Confirmed</label>
                             </div>
 
                             <hr class="my-3 opacity-10">
 
                             <div class="form-check">
-                                <input type="checkbox" name="reject_student" class="form-check-input" id="reject" onchange="toggleReject(this)">
+                                <input type="checkbox" name="reject_student" class="form-check-input" id="reject" onchange="toggleReject(this)" <?php echo (isset($student['status']) && $student['status'] == 0) ? 'checked' : ''; ?>>
                                 <label class="form-check-label text-danger fw-bold" for="reject">
                                     <i class="fas fa-user-times me-1"></i> Permanently Reject Student
                                 </label>

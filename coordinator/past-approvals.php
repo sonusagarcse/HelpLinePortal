@@ -4,6 +4,20 @@ require_once('config/auth.php');
 
 $page_title = 'Approval & Rejection History';
 
+function time_ago($timestamp) {
+    if (!$timestamp) return 'N/A';
+    $time = is_numeric($timestamp) ? $timestamp : strtotime($timestamp);
+    if (!$time) return 'N/A';
+    
+    $diff = time() - $time;
+    if ($diff < 60) return 'Just now';
+    if ($diff < 3600) return floor($diff / 60) . ' mins ago';
+    if ($diff < 86400) return floor($diff / 3600) . ' hrs ago';
+    if ($diff < 604800) return floor($diff / 86400) . ' days ago';
+    
+    return date('d M, h:i A', $time);
+}
+
 // Fetch History (coordinator_approval_status 2 or 3)
 $history_students = [];
 if (!empty($coordinator_bids)) {
@@ -53,6 +67,7 @@ include('includes/header.php');
                             <th>Student Profile</th>
                             <th>Processing Info</th>
                             <th>Verified By</th>
+                            <th>Approval Time</th>
                             <th class="text-center pe-4">Final Status</th>
                         </tr>
                     </thead>
@@ -89,6 +104,11 @@ include('includes/header.php');
                                     <span class="badge bg-white shadow-sm text-purple border border-white px-3 py-2 rounded-pill fw-bold" style="color: #6d28d9;">
                                         <i class="fas fa-headset me-1 opacity-75"></i><?php echo htmlspecialchars($student['caller_name'] ?? 'Direct'); ?>
                                     </span>
+                                </td>
+                                <td>
+                                    <div class="small text-muted fw-medium">
+                                        <i class="fas fa-calendar-check me-1 opacity-50"></i><?php echo time_ago($student['coordinator_approved_at']); ?>
+                                    </div>
                                 </td>
                                 <td class="text-center pe-4">
                                     <?php if ($student['coordinator_approval_status'] == 2): ?>

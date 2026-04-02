@@ -10,7 +10,7 @@
 
 
       <!-- pre loader area start -->
-      <?php include('loader.php');?>
+      <?php if(file_exists('loader.php')) include('loader.php'); ?>
       <!-- pre loader area end -->
 
       <!-- back to top start -->

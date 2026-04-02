@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_registration'
                 $caller_amount = ($caller_id > 0) ? ($info['earning_per_admission'] ?? 200.00) : 0;
 
                 // 2. Update registration statuses
-                $update_query = "UPDATE registration SET reg_status = 3, coordinator_approval_status = 2 WHERE id = ?";
+                $update_query = "UPDATE registration SET reg_status = 3, coordinator_approval_status = 2, coordinator_approved_at = NOW() WHERE id = ?";
                 $u_stmt = mysqli_prepare($con, $update_query);
                 mysqli_stmt_bind_param($u_stmt, "i", $student_id);
                 mysqli_stmt_execute($u_stmt);
@@ -142,6 +142,7 @@ include('includes/header.php');
                         <tr>
                             <th class="ps-4">Reg No</th>
                             <th>Student Profile</th>
+                            <th>Contact</th>
                             <th>Credentials</th>
                             <th>Source</th>
                             <th class="text-center pe-4">Action</th>
@@ -163,6 +164,14 @@ include('includes/header.php');
                                         <div class="d-flex flex-column">
                                             <span class="fw-bold text-dark" style="font-size: 1.05rem; letter-spacing: -0.3px;"><?php echo htmlspecialchars($student['name']); ?></span>
                                             <span class="text-muted small fw-medium"><i class="fas fa-fingerprint me-1 text-primary opacity-50"></i>ID: <?php echo htmlspecialchars($student['id']); ?></span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-white bg-opacity-75 rounded-3 px-3 py-2 border border-white shadow-sm d-inline-flex align-items-center" style="backdrop-filter: blur(10px);">
+                                            <i class="fas fa-phone-alt text-success me-2 opacity-75"></i>
+                                            <span class="fw-bold text-dark"><?php echo htmlspecialchars($student['mob'] ?? 'N/A'); ?></span>
                                         </div>
                                     </div>
                                 </td>

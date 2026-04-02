@@ -13,6 +13,20 @@ $supervisor_id = $_SESSION['supervisor_id'];
 $supervisor_name = $_SESSION['supervisor_name'];
 $supervisor_bids = $_SESSION['supervisor_bids'] ?? [];
 
+function time_ago($timestamp) {
+    if (!$timestamp) return 'N/A';
+    $time = is_numeric($timestamp) ? $timestamp : strtotime($timestamp);
+    if (!$time) return 'N/A';
+    
+    $diff = time() - $time;
+    if ($diff < 60) return 'Just now';
+    if ($diff < 3600) return floor($diff / 60) . ' mins ago';
+    if ($diff < 86400) return floor($diff / 3600) . ' hrs ago';
+    if ($diff < 604800) return floor($diff / 86400) . ' days ago';
+    
+    return date('d M, h:i A', $time);
+}
+
 // Handle credential submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_credentials'])) {
     $student_id = (int)$_POST['student_id'];
@@ -133,13 +147,14 @@ include 'includes/header.php';
                         <th class="ps-4">Student Info</th>
                         <th>Branch/Category</th>
                         <th>Caller</th>
+                        <th>Sent Time</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($pending_registration)): ?>
                         <tr>
-                            <td colspan="4" class="text-center py-5">
+                            <td colspan="5" class="text-center py-5">
                                 <i class="fas fa-check-double fs-1 text-success opacity-25 mb-3"></i>
                                 <h6 class="text-muted fw-semibold">No pending registration approvals</h6>
                                 <p class="small text-muted mb-0">All students have been processed.</p>
@@ -166,6 +181,11 @@ include 'includes/header.php';
                                 <td>
                                     <div class="small fw-semibold text-secondary">
                                         <i class="fas fa-headset me-1 opacity-50"></i><?php echo htmlspecialchars($student['caller_name'] ?? 'Direct'); ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="small text-muted fw-medium">
+                                        <i class="fas fa-clock me-1 opacity-50"></i><?php echo time_ago($student['reg_ready_at']); ?>
                                     </div>
                                 </td>
                                 <td>
@@ -233,13 +253,14 @@ include 'includes/header.php';
                         <th class="ps-4">Student Info</th>
                         <th>Branch</th>
                         <th>Processed By</th>
+                        <th>Approval Time</th>
                         <th>Coordinator Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($past_approvals)): ?>
                         <tr>
-                            <td colspan="4" class="text-center py-4 text-muted small">No recent approvals found</td>
+                            <td colspan="5" class="text-center py-4 text-muted small">No recent approvals found</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($past_approvals as $student): ?>
@@ -261,6 +282,11 @@ include 'includes/header.php';
                                         <?php if($student['coordinator_approval_status'] == 2): ?>
                                             <div class="text-muted"><i class="fas fa-user-check me-1 text-muted"></i><?php echo htmlspecialchars($student['coordinator_name'] ?? 'Coordinator'); ?></div>
                                         <?php endif; ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="small text-muted fw-medium">
+                                        <i class="fas fa-calendar-check me-1 opacity-50"></i><?php echo time_ago($student['coordinator_approved_at']); ?>
                                     </div>
                                 </td>
                                 <td>
