@@ -77,6 +77,9 @@ include 'includes/header.php';
         <p class="page-subtitle">Welcome back, monitor your team's performance today.</p>
     </div>
     <div>
+        <a href="add_student.php" class="btn btn-outline-primary d-flex align-items-center gap-2">
+            <i class="fas fa-user-plus"></i> Add New Student
+        </a>
         <a href="assign_data.php" class="btn btn-primary d-flex align-items-center gap-2">
             <i class="fas fa-tasks"></i> Assign Calling Data
         </a>

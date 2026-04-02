@@ -477,6 +477,10 @@ if (isset($_SESSION['supervisor_id']) && isset($con)) {
                     <i class="fas fa-tasks"></i>
                     <span>Assign Data</span>
                 </a>
+                <a href="add_student.php" class="nav-item-link <?php echo $current_page == 'add_student.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Add Student</span>
+                </a>
                 <a href="reports.php" class="nav-item-link <?php echo $current_page == 'reports.php' ? 'active' : ''; ?>">
                     <i class="fas fa-chart-pie"></i>
                     <span>Reports</span>

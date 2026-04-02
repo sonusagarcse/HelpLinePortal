@@ -86,11 +86,15 @@ while ($row = mysqli_fetch_assoc($result)) {
                                     <td>
                                         <?php 
                                         if($app['coordinator_approval_status'] == 1) {
-                                            echo '<span class="badge bg-warning text-dark">Pending</span>';
+                                            echo '<span class="badge bg-warning text-dark">Pending Approval</span>';
                                         } elseif($app['coordinator_approval_status'] == 2) {
                                             echo '<span class="badge bg-success">Approved</span>';
                                         } elseif($app['coordinator_approval_status'] == 3) {
                                             echo '<span class="badge bg-danger">Rejected</span>';
+                                        } elseif($app['reg_status'] == 1) {
+                                            echo '<span class="badge bg-info">Ready for Reg</span>';
+                                        } elseif($app['reg_status'] == 2) {
+                                            echo '<span class="badge bg-primary">Credentials Sent</span>';
                                         } else {
                                             echo '<span class="badge bg-secondary">System Default</span>';
                                         }
@@ -137,7 +141,7 @@ while ($row = mysqli_fetch_assoc($result)) {
                                                         <input type="hidden" name="student_id" value="<?php echo $app['student_id']; ?>">
                                                         <input type="hidden" name="mquery_id" value="<?php echo $app['mquery_id']; ?>">
                                                         <input type="hidden" name="caller_id" value="<?php echo $app['actual_callerid']; ?>">
-                                                        <button class="dropdown-item text-danger" type="submit" onclick="return confirm('Reset submission? This deletes the completion entry, revokes earnings, enables the caller to call again, and resets coordinator pipeline.');">
+                                                        <button class="dropdown-item text-danger" type="submit" onclick="return confirm('Reset whole workflow? This will send the student back to caller pool and reset all registration statuses.');">
                                                             <i class="fas fa-undo me-2"></i>Unlock Caller Entry
                                                         </button>
                                                     </form>
@@ -148,8 +152,8 @@ while ($row = mysqli_fetch_assoc($result)) {
                                                     <form action="action.php" method="POST" class="d-inline">
                                                         <input type="hidden" name="action" value="reset_supervisor">
                                                         <input type="hidden" name="student_id" value="<?php echo $app['student_id']; ?>">
-                                                        <button class="dropdown-item text-warning fw-bold" type="submit" onclick="return confirm('Unlock Supervisor? This deletes generated credentials and sends the student back to the Supervisor\'s pending list.');">
-                                                            <i class="fas fa-unlock me-2"></i>Unlock Supervisor Entry
+                                                        <button class="dropdown-item text-warning fw-bold" type="submit" onclick="return confirm('Reset Supervisor workflow? This will clear credentials and set it back to Ready for Registration.');">
+                                                            <i class="fas fa-user-edit me-2"></i>Unlock Supervisor Entry
                                                         </button>
                                                     </form>
                                                 </li>

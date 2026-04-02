@@ -98,23 +98,28 @@ include('includes/header.php');
                                     </span>
                                 </td>
                                 <td class="text-center pe-4">
-                                    <div class="d-flex gap-2 justify-content-center">
-                                        <form action="action.php" method="POST" class="d-inline">
-                                            <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
-                                            <input type="hidden" name="action" value="approve">
-                                            <input type="hidden" name="redirect" value="direct_approvals.php">
-                                            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm fw-bold border-0 action-btn" style="background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);" onclick="return confirm('Finalize this admission?');">
-                                                <i class="fas fa-check"></i> Confirm
-                                            </button>
-                                        </form>
-                                        <form action="action.php" method="POST" class="d-inline">
-                                            <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
-                                            <input type="hidden" name="action" value="reject">
-                                            <input type="hidden" name="redirect" value="direct_approvals.php">
-                                            <button type="submit" class="btn bg-white btn-sm rounded-pill px-3 fw-bold border overflow-hidden shadow-sm text-danger action-btn" onclick="return confirm('Reject this student?');">
-                                                <i class="fas fa-times"></i> Reject
-                                            </button>
-                                        </form>
+                                    <div class="d-flex flex-column gap-2 justify-content-center">
+                                        <div class="d-flex gap-2 w-100">
+                                            <form action="action.php" method="POST" class="flex-fill">
+                                                <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
+                                                <input type="hidden" name="action" value="approve">
+                                                <input type="hidden" name="redirect" value="direct_approvals.php">
+                                                <button type="submit" class="btn w-100 btn-primary btn-sm rounded-pill px-3 shadow-sm fw-bold border-0 action-btn" style="background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);" onclick="return confirm('Finalize this admission?');">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                            <form action="action.php" method="POST" class="flex-fill">
+                                                <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
+                                                <input type="hidden" name="action" value="reject">
+                                                <input type="hidden" name="redirect" value="direct_approvals.php">
+                                                <button type="submit" class="btn w-100 bg-white btn-sm rounded-pill px-3 fw-bold border overflow-hidden shadow-sm text-danger action-btn" onclick="return confirm('Reject this student?');">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <button type="button" class="btn btn-light w-100 btn-sm rounded-pill px-3 shadow-sm fw-medium action-btn" data-bs-toggle="modal" data-bs-target="#viewProfileModal<?php echo $student['id']; ?>">
+                                            <i class="fas fa-eye me-1 text-primary"></i>Details
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -122,7 +127,83 @@ include('includes/header.php');
                     </tbody>
                 </table>
             </div>
+            </div>
         </div>
+        
+        <!-- View Profile Modals -->
+        <?php foreach ($direct_admissions as $student): ?>
+            <div class="modal fade text-start" id="viewProfileModal<?php echo $student['id']; ?>" tabindex="-1" style="z-index: 1055;">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content border-0 shadow-lg rounded-4" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px);">
+                        <div class="modal-header border-bottom pb-3 pt-4 px-4 bg-light bg-opacity-50">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 50px; height: 50px; background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                                    <i class="fas fa-user fs-4"></i>
+                                </div>
+                                <div>
+                                    <h4 class="modal-title fw-bold text-dark mb-0"><?php echo htmlspecialchars($student['name']); ?></h4>
+                                    <div class="text-muted small"><i class="fas fa-id-badge me-1"></i><?php echo htmlspecialchars($student['regno'] ?? 'N/A'); ?></div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="bg-white p-3 rounded-4 shadow-sm border h-100">
+                                        <h6 class="fw-bold text-primary mb-3"><i class="fas fa-address-card me-2"></i>Personal Info</h6>
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tr><td class="text-muted" width="40%">Father's Name:</td><td class="fw-bold"><?php echo htmlspecialchars($student['father'] ?? 'N/A'); ?></td></tr>
+                                            <tr><td class="text-muted">DOB:</td><td class="fw-bold"><?php echo htmlspecialchars($student['dob'] ?? 'N/A'); ?></td></tr>
+                                            <tr><td class="text-muted">Gender:</td><td class="fw-bold"><?php echo htmlspecialchars($student['gender'] ?? 'N/A'); ?></td></tr>
+                                            <tr><td class="text-muted">Category:</td><td class="fw-bold"><?php echo htmlspecialchars($student['category_name'] ?? 'N/A'); ?></td></tr>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="bg-white p-3 rounded-4 shadow-sm border h-100">
+                                        <h6 class="fw-bold text-success mb-3"><i class="fas fa-phone-alt me-2"></i>Contact Details</h6>
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tr><td class="text-muted" width="40%">Primary No:</td><td class="fw-bold"><?php echo htmlspecialchars($student['mob'] ?? 'N/A'); ?></td></tr>
+                                            <tr><td class="text-muted">Alternative No:</td><td class="fw-bold"><?php echo htmlspecialchars($student['othermob_no'] ?? 'N/A'); ?></td></tr>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="bg-white p-3 rounded-4 shadow-sm border">
+                                        <h6 class="fw-bold text-warning-emphasis mb-3"><i class="fas fa-map-marker-alt me-2 text-warning"></i>Address & Academics</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <table class="table table-sm table-borderless mb-0">
+                                                    <tr><td class="text-muted" width="35%">Address:</td><td class="fw-bold"><?php echo htmlspecialchars($student['address'] ?? 'N/A'); ?></td></tr>
+                                                    <tr><td class="text-muted">Village/City:</td><td class="fw-bold"><?php echo htmlspecialchars($student['village'] ?? 'N/A'); ?></td></tr>
+                                                </table>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <table class="table table-sm table-borderless mb-0">
+                                                    <tr><td class="text-muted" width="35%">District/State:</td><td class="fw-bold"><?php echo htmlspecialchars($student['dis'] ?? ''); ?>, <?php echo htmlspecialchars($student['state'] ?? ''); ?> - <?php echo htmlspecialchars($student['pincode'] ?? ''); ?></td></tr>
+                                                    <tr><td class="text-muted">Qualification:</td><td class="fw-bold"><?php echo htmlspecialchars($student['qualification'] ?? 'N/A'); ?></td></tr>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="bg-light p-3 rounded-4 border">
+                                        <h6 class="fw-bold text-dark mb-2"><i class="fas fa-comment-dots me-2 text-primary opacity-75"></i>Caller Remarks</h6>
+                                        <p class="mb-0 text-muted fst-italic">"<?php echo htmlspecialchars($student['caller_remark'] ?? 'No remarks provided.'); ?>"</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top-0 px-4 pb-4">
+                            <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+
     </div>
 </div>
 

@@ -69,7 +69,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_begin_transaction($con);
                 try {
                     // Reset registration status to allow caller to act again
-                    mysqli_query($con, "UPDATE registration SET coordinator_approval_status = 0 WHERE id = $student_id");
+                    mysqli_query($con, "UPDATE registration SET 
+                        coordinator_approval_status = 0, 
+                        reg_status = 0, 
+                        reg_ready_at = NULL 
+                        WHERE id = $student_id");
                     
                     // Revoke any earnings
                     mysqli_query($con, "DELETE FROM caller_earnings WHERE student_id = $student_id");
