@@ -32,15 +32,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_credentials'])
     if ($student_id > 0 && !empty($login_id) && !empty($password) && $assigned_coordinator > 0) {
         $update_query = "UPDATE registration SET reg_login_id = ?, reg_password = ?, reg_status = 2, coordinator_approval_status = 1, assigned_coordinator = ?, submitted_by_supervisor = ? WHERE id = ?";
         $stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($stmt, "ssiii", $login_id, $password, $assigned_coordinator, $supervisor_id, $student_id);
         
-        if (mysqli_stmt_execute($stmt)) {
-            $_SESSION['success_message'] = "Registration credentials saved and auto-routed to Branch Coordinator!";
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "ssiii", $login_id, $password, $assigned_coordinator, $supervisor_id, $student_id);
+            
+            if (mysqli_stmt_execute($stmt)) {
+                $_SESSION['success_message'] = "Registration credentials saved and auto-routed to Branch Coordinator!";
+            } else {
+                $_SESSION['error_message'] = "Database Error (Execute): " . mysqli_stmt_error($stmt);
+            }
+            mysqli_stmt_close($stmt);
         } else {
-            $_SESSION['error_message'] = "Error saving credentials: " . mysqli_error($con);
+            $_SESSION['error_message'] = "Database Error (Prepare): " . mysqli_error($con);
         }
+    } elseif ($student_id <= 0) {
+        $_SESSION['error_message'] = "Invalid Student ID.";
+    } elseif (empty($login_id) || empty($password)) {
+        $_SESSION['error_message'] = "Login ID and Password are required.";
     } elseif ($assigned_coordinator === 0) {
-        $_SESSION['error_message'] = "No Coordinator is currently assigned to this branch. Please contact Admin.";
+        $_SESSION['error_message'] = "No Coordinator assigned to this branch (BID: $bid). Please contact Admin.";
+    } else {
+        $_SESSION['error_message'] = "Something went wrong. Please check if all fields are correct.";
     }
     header('Location: reg_approvals.php');
     exit;
