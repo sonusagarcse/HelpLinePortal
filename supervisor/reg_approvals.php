@@ -255,12 +255,13 @@ include 'includes/header.php';
                         <th>Processed By</th>
                         <th>Approval Time</th>
                         <th>Coordinator Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($past_approvals)): ?>
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted small">No recent approvals found</td>
+                            <td colspan="6" class="text-center py-4 text-muted small">No recent approvals found</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($past_approvals as $student): ?>
@@ -301,6 +302,50 @@ include 'includes/header.php';
                                         echo '<span class="badge bg-light text-muted">Processing...</span>';
                                     }
                                     ?>
+                                </td>
+                                <td>
+                                    <?php if($student['coordinator_approval_status'] == 1): ?>
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#editCredModal<?php echo $student['id']; ?>">
+                                            <i class="fas fa-edit me-1"></i>Edit
+                                        </button>
+
+                                        <!-- Edit Modal -->
+                                        <div class="modal fade" id="editCredModal<?php echo $student['id']; ?>" tabindex="-1">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content border-0 shadow-lg">
+                                                    <div class="modal-header border-bottom-0 pt-4 px-4">
+                                                        <h5 class="modal-title fw-bold">Edit Login Credentials</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form method="POST">
+                                                        <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
+                                                        <div class="modal-body px-4">
+                                                            <div class="bg-warning bg-opacity-10 p-3 rounded-4 mb-4 border border-warning border-opacity-25">
+                                                                <div class="small fw-bold text-warning-emphasis"><i class="fas fa-exclamation-triangle me-1"></i>Notice</div>
+                                                                <div class="small text-dark mt-1">You are modifying credentials that were already submitted.</div>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold small">Login ID *</label>
+                                                                <input type="text" name="reg_login_id" class="form-control rounded-3" required 
+                                                                    value="<?php echo htmlspecialchars($student['reg_login_id'] ?? ''); ?>">
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold small">Password *</label>
+                                                                <input type="text" name="reg_password" class="form-control rounded-3" required 
+                                                                    value="<?php echo htmlspecialchars($student['reg_password'] ?? ''); ?>">
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer border-top-0 pb-4 px-4">
+                                                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-toggle="modal">Cancel</button>
+                                                            <button type="submit" name="submit_credentials" class="btn btn-primary rounded-pill px-4">
+                                                                Update Credentials
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

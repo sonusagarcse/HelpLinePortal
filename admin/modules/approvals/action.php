@@ -88,6 +88,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 exit;
             }
+        } elseif ($action === 'reset_supervisor') {
+            mysqli_begin_transaction($con);
+            try {
+                // Reset to regular 'Ready for Registration' (reg_status = 1)
+                // Clear out coordinator approval if any
+                // Clear the submitted credentials
+                mysqli_query($con, "UPDATE registration SET 
+                    reg_status = 1, 
+                    coordinator_approval_status = 0,
+                    reg_login_id = NULL,
+                    reg_password = NULL,
+                    submitted_by_supervisor = 0,
+                    coordinator_approved_at = NULL
+                    WHERE id = $student_id");
+                    
+                mysqli_commit($con);
+                header('Location: list.php?success=Supervisor_Unlocked');
+            } catch(Exception $e) {
+                mysqli_rollback($con);
+                header('Location: list.php?error=db_error');
+            }
+            exit;
         }
     }
 }
