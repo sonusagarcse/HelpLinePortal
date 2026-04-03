@@ -72,6 +72,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_credentials'])
     exit;
 }
 
+// Handle data revert to caller
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['revert_student'])) {
+    $student_id = (int)$_POST['student_id'];
+    $reason = mysqli_real_escape_string($con, $_POST['revert_reason']);
+    
+    if ($student_id > 0 && !empty($reason)) {
+        // Prepend the revert reason to the caller's remark so they see it
+        $revert_msg = "REVERTED BY SUPERVISOR: " . $reason . " | ";
+        $update_query = "UPDATE registration SET 
+                         reg_status = 0, 
+                         reg_ready_at = NULL, 
+                         caller_remark = CONCAT(?, IFNULL(caller_remark, '')) 
+                         WHERE id = ?";
+        $stmt = mysqli_prepare($con, $update_query);
+        
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "si", $revert_msg, $student_id);
+            
+            if (mysqli_stmt_execute($stmt)) {
+                // ALSO: Find and delete the latest 'Ready' interaction from mquery
+                // to "undo" the caller's action so it shows up in their dashboard immediately.
+                $del_query = "DELETE FROM mquery WHERE studentid = ? AND status = 0 ORDER BY id DESC LIMIT 1";
+                $del_stmt = mysqli_prepare($con, $del_query);
+                if ($del_stmt) {
+                    mysqli_stmt_bind_param($del_stmt, "i", $student_id);
+                    mysqli_stmt_execute($del_stmt);
+                    mysqli_stmt_close($del_stmt);
+                }
+                
+                $_SESSION['success_message'] = "Student data reverted back to the caller successfully.";
+            } else {
+                $_SESSION['error_message'] = "Database Error (Execute): " . mysqli_stmt_error($stmt);
+            }
+            mysqli_stmt_close($stmt);
+        } else {
+            $_SESSION['error_message'] = "Database Error (Prepare): " . mysqli_error($con);
+        }
+    } else {
+        $_SESSION['error_message'] = "Invalid request or missing revert reason.";
+    }
+    header('Location: reg_approvals.php');
+    exit;
+}
+
 // Fetch students ready for registration (reg_status = 1) in supervisor's branches
 $pending_registration = [];
 if (!empty($supervisor_bids)) {
@@ -189,11 +233,16 @@ include 'includes/header.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#credModal<?php echo $student['id']; ?>">
-                                        <i class="fas fa-key me-1"></i> Add Credentials
-                                    </button>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#credModal<?php echo $student['id']; ?>">
+                                            <i class="fas fa-key me-1"></i> Credentials
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#revertModal<?php echo $student['id']; ?>">
+                                            <i class="fas fa-undo me-1"></i> Revert
+                                        </button>
+                                    </div>
 
-                                    <!-- Modal -->
+                                    <!-- Login Credentials Modal -->
                                     <div class="modal fade" id="credModal<?php echo $student['id']; ?>" tabindex="-1">
                                         <div class="modal-dialog modal-dialog-centered">
                                             <div class="modal-content border-0 shadow-lg">
@@ -222,9 +271,44 @@ include 'includes/header.php';
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer border-top-0 pb-4 px-4">
-                                                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-toggle="modal">Cancel</button>
+                                                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
                                                         <button type="submit" name="submit_credentials" class="btn btn-primary rounded-pill px-4">
                                                             Save & Send for Approval
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Revert Modal -->
+                                    <div class="modal fade" id="revertModal<?php echo $student['id']; ?>" tabindex="-1">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 shadow-lg">
+                                                <div class="modal-header border-bottom-0 pt-4 px-4">
+                                                    <h5 class="modal-title fw-bold text-danger">Revert to Caller</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="POST">
+                                                    <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
+                                                    <div class="modal-body px-4">
+                                                        <div class="bg-danger bg-opacity-5 p-3 rounded-4 mb-4 border border-danger border-opacity-10">
+                                                            <div class="small text-muted">Reverting Data For</div>
+                                                            <div class="fw-bold fs-5"><?php echo htmlspecialchars($student['name']); ?></div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-bold small">Reason for Reverting *</label>
+                                                            <textarea name="revert_reason" class="form-control rounded-3" rows="3" required placeholder="Explain why the data is being sent back (e.g., incorrect marks, missing address)"></textarea>
+                                                        </div>
+                                                        <div class="small text-muted">
+                                                            <i class="fas fa-info-circle me-1"></i> 
+                                                            This will remove the student from your pending list and notify the caller to fix the issues you've mentioned.
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-top-0 pb-4 px-4">
+                                                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" name="revert_student" class="btn btn-danger rounded-pill px-4">
+                                                            Confirm Revert
                                                         </button>
                                                     </div>
                                                 </form>

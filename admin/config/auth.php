@@ -18,38 +18,6 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
     $admin_type = $_SESSION['admin_type']; // 1 = Super Admin, 0 = Admin
     $admin_bid = $_SESSION['admin_bid'];
 }
-elseif (isset($_SESSION['manager_logged_in']) && $_SESSION['manager_logged_in'] === true) {
-    // Manager is logged in
-    $admin_id = $_SESSION['manager_id'];
-    $admin_name = $_SESSION['manager_name'];
-    $admin_email = $_SESSION['manager_email'];
-    $admin_type = 2; // Manager type
-    $admin_bid = $_SESSION['manager_bid'];
-}
-elseif (isset($_SESSION['supervisor_logged_in']) && $_SESSION['supervisor_logged_in'] === true) {
-    // Supervisor is logged in
-    $admin_id = $_SESSION['supervisor_id'];
-    $admin_name = $_SESSION['supervisor_name'];
-    $admin_email = $_SESSION['supervisor_email'];
-    $admin_type = 4; // Supervisor type
-    $admin_bid = $_SESSION['supervisor_bid'];
-}
-elseif (isset($_SESSION['healthcare_logged_in']) && $_SESSION['healthcare_logged_in'] === true) {
-    // Healthcare is logged in
-    $admin_id = $_SESSION['healthcare_id'];
-    $admin_name = $_SESSION['healthcare_name'];
-    $admin_email = $_SESSION['healthcare_email'];
-    $admin_type = 3; // Healthcare type
-    $admin_bid = 0;
-}
-elseif (isset($_SESSION['branch_logged_in']) && $_SESSION['branch_logged_in'] === true) {
-    // Branch is logged in
-    $admin_id = $_SESSION['branch_id'];
-    $admin_name = $_SESSION['branch_name'];
-    $admin_email = $_SESSION['branch_email'];
-    $admin_type = 5; // Branch type
-    $admin_bid = $_SESSION['branch_id'];
-}
 else {
     // Determine redirect URL
     $redirect_url = (isset($SITE_URL) ? $SITE_URL : '') . '/admin/login.php';
