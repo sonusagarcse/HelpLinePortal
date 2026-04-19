@@ -11,16 +11,21 @@ if (!isset($_SESSION['caller_id'])) {
 $caller_id = $_SESSION['caller_id'];
 $caller_name = $_SESSION['caller_name'];
 
+$caller_type = $_SESSION['caller_type'] ?? 'KYP';
+
+$field_assigned_caller = ($caller_type == 'UG_PG') ? 'ugpg_assigned_caller' : 'assigned_caller';
+$mquery_type = ($caller_type == 'UG_PG') ? 'UG_PG' : 'KYP';
+
 $where_clause = "(
     EXISTS (SELECT 1 FROM caller_branches cb WHERE cb.caller_id = $caller_id AND cb.status = 1 AND cb.branch_id = r.bid AND (cb.category_id = 0 OR cb.category_id = r.mcategory))
-    OR r.assigned_caller = $caller_id
+    OR r.$field_assigned_caller = $caller_id
 ) AND r.status = 1";
 
 // Get latest query status for all relevant students
 $latest_mq_subquery = "SELECT studentid, status, nextdate, des
                       FROM mquery 
-                      WHERE callerid = $caller_id 
-                      AND id IN (SELECT MAX(id) FROM mquery WHERE callerid = $caller_id GROUP BY studentid)";
+                      WHERE callerid = $caller_id AND query_type = '$mquery_type'
+                      AND id IN (SELECT MAX(id) FROM mquery WHERE callerid = $caller_id AND query_type = '$mquery_type' GROUP BY studentid)";
 
 $query = "SELECT r.*, r.id as student_id, r.regno as student_regno, r.name as student_name, 
                  r.father as student_father, r.mob as student_mob, 
@@ -108,7 +113,8 @@ while ($row = mysqli_fetch_assoc($result)) {
                                         <td><?php echo htmlspecialchars($data['bname'] ?? 'N/A'); ?></td>
                                         <td><?php echo htmlspecialchars($data['latest_remarks'] ?? 'No remarks'); ?></td>
                                         <td>
-                                            <a href="make-call.php?id=<?php echo $data['id']; ?>&student_id=<?php echo $data['student_id']; ?>"
+                                            <?php $make_call_link = ($caller_type == 'UG_PG') ? 'make-call-ugpg.php' : 'make-call.php'; ?>
+                                            <a href="<?php echo $make_call_link; ?>?id=<?php echo $data['id']; ?>&student_id=<?php echo $data['student_id']; ?>"
                                                 class="btn btn-sm btn-primary">
                                                 <i class="fas fa-phone"></i> Call Now
                                             </a>

@@ -189,8 +189,35 @@ $admin_base = $protocol . '://' . $host . $base_dir . '/admin/';
         </li>
 
         <li>
-            <a href="<?php echo $admin_base; ?>modules/approvals/list.php" class="<?php echo basename(dirname($_SERVER['PHP_SELF'])) == 'approvals' ? 'active' : ''; ?>">
+            <a href="#ugpgSubmenu" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
+                <i class="fas fa-university"></i> UG/PG Admission
+                <?php 
+                $pending_ugpg = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(*) as total FROM registration WHERE ugpg_status = 1"))['total'];
+                if($pending_ugpg > 0): ?>
+                    <span class="badge bg-danger rounded-pill float-end"><?php echo $pending_ugpg; ?></span>
+                <?php endif; ?>
+            </a>
+            <ul class="collapse list-unstyled" id="ugpgSubmenu" style="padding-left: 20px;">
+                <li><a href="<?php echo $admin_base; ?>modules/callers/list.php?type=UG_PG"><i class="fas fa-headset"></i> Callers (UG/PG)</a></li>
+                <li>
+                    <a href="<?php echo $admin_base; ?>modules/approvals/list.php?type=UG_PG">
+                        <i class="fas fa-check-double"></i> Approvals (UG/PG)
+                        <?php if($pending_ugpg > 0): ?>
+                            <span class="badge bg-danger rounded-pill float-end"><?php echo $pending_ugpg; ?></span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <li>
+            <a href="<?php echo $admin_base; ?>modules/approvals/list.php" class="<?php echo basename(dirname($_SERVER['PHP_SELF'])) == 'approvals' && !isset($_GET['type']) ? 'active' : ''; ?>">
                 <i class="fas fa-check-double"></i> Approval Manager
+                <?php 
+                $pending_kyp = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(*) as total FROM mquery WHERE query_type = 'KYP' AND status = 0"))['total'];
+                if($pending_kyp > 0): ?>
+                    <span class="badge bg-warning text-dark rounded-pill float-end"><?php echo $pending_kyp; ?></span>
+                <?php endif; ?>
             </a>
         </li>
 

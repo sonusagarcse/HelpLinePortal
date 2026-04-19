@@ -7,6 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $student_id = (int)($_POST['student_id'] ?? 0);
     $caller_id = (int)($_POST['caller_id'] ?? 0);
     $mquery_id = (int)($_POST['mquery_id'] ?? 0);
+    $query_type = $_POST['query_type'] ?? 'KYP';
 
     if ($student_id > 0) {
         
@@ -23,7 +24,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_begin_transaction($con);
             try {
                 // Update registration
-                mysqli_query($con, "UPDATE registration SET coordinator_approval_status = 2 WHERE id = $student_id");
+                if ($query_type == 'UG_PG') {
+                    mysqli_query($con, "UPDATE registration SET ugpg_status = 3 WHERE id = $student_id");
+                } else {
+                    mysqli_query($con, "UPDATE registration SET coordinator_approval_status = 2 WHERE id = $student_id");
+                }
                 
                 // Ensure earning is credited if not already present
                 $check = mysqli_query($con, "SELECT id FROM caller_earnings WHERE student_id = $student_id AND caller_id = $caller_id");
@@ -48,7 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_begin_transaction($con);
             try {
                 // Update registration
-                mysqli_query($con, "UPDATE registration SET coordinator_approval_status = 3 WHERE id = $student_id");
+                if ($query_type == 'UG_PG') {
+                    mysqli_query($con, "UPDATE registration SET ugpg_status = 2 WHERE id = $student_id");
+                } else {
+                    mysqli_query($con, "UPDATE registration SET coordinator_approval_status = 3 WHERE id = $student_id");
+                }
                 
                 // Revoke earning if it was given
                 mysqli_query($con, "DELETE FROM caller_earnings WHERE student_id = $student_id");
@@ -69,11 +78,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_begin_transaction($con);
                 try {
                     // Reset registration status to allow caller to act again
-                    mysqli_query($con, "UPDATE registration SET 
-                        coordinator_approval_status = 0, 
-                        reg_status = 0, 
-                        reg_ready_at = NULL 
-                        WHERE id = $student_id");
+                    if ($query_type == 'UG_PG') {
+                        mysqli_query($con, "UPDATE registration SET 
+                            ugpg_status = 0
+                            WHERE id = $student_id");
+                    } else {
+                        mysqli_query($con, "UPDATE registration SET 
+                            coordinator_approval_status = 0, 
+                            reg_status = 0, 
+                            reg_ready_at = NULL 
+                            WHERE id = $student_id");
+                    }
                     
                     // Revoke any earnings
                     mysqli_query($con, "DELETE FROM caller_earnings WHERE student_id = $student_id");

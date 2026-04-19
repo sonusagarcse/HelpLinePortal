@@ -9,23 +9,26 @@ if (!isset($_SESSION['caller_id'])) {
 
 $caller_id = $_SESSION['caller_id'];
 
+$caller_type = $_SESSION['caller_type'] ?? 'KYP';
+$mquery_type = ($caller_type == 'UG_PG') ? 'UG_PG' : 'KYP';
+
 // Get counts for boxes
-$stats['completed_today'] = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND status = 0 AND DATE(date) = CURDATE()"))['total'];
-$stats['completed_month'] = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND status = 0 AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())"))['total'];
+$stats['completed_today'] = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND query_type = '$mquery_type' AND (status = 0 OR (query_type = 'UG_PG' AND status = 2)) AND DATE(date) = CURDATE()"))['total'];
+$stats['completed_month'] = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND query_type = '$mquery_type' AND (status = 0 OR (query_type = 'UG_PG' AND status = 2)) AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())"))['total'];
 
 // Get full list (Group by studentid to avoid duplicates if multiple calls were marked completed)
 $query = "SELECT m.*, r.name as student_name, r.regno as student_regno, r.mob as student_mob, 
-                 r.coordinator_approval_status, r.reg_status, b.bname, ce.amount as earned_amount 
+                 r.coordinator_approval_status, r.reg_status, r.ugpg_status, b.bname, ce.amount as earned_amount 
           FROM mquery m 
           JOIN registration r ON m.studentid = r.id 
           LEFT JOIN branch b ON r.bid = b.id 
           LEFT JOIN caller_earnings ce ON r.id = ce.student_id AND ce.caller_id = $caller_id
-          WHERE m.callerid = $caller_id AND m.status = 0 
+          WHERE m.callerid = $caller_id AND (m.status = 0 OR (m.query_type = 'UG_PG' AND m.status = 2)) AND m.query_type = '$mquery_type'
           AND m.id IN (
               SELECT MAX(mq.id) 
               FROM mquery mq 
               JOIN registration reg ON mq.studentid = reg.id 
-              WHERE mq.callerid = $caller_id AND mq.status = 0 
+              WHERE mq.callerid = $caller_id AND mq.status = 0 AND mq.query_type = '$mquery_type'
               GROUP BY reg.mob
           )
           ORDER BY m.id DESC";
@@ -126,18 +129,28 @@ $completed_calls = mysqli_fetch_all($result, MYSQLI_ASSOC);
                                 <td><?php echo htmlspecialchars($call['bname'] ?? 'N/A'); ?></td>
                                 <td>
                                     <?php 
-                                    if ($call['coordinator_approval_status'] == 2) {
-                                        echo '<span class="badge bg-success shadow-sm rounded-pill px-3 py-2"><i class="fas fa-check-double me-1"></i>Admission Approved</span>';
-                                    } elseif ($call['coordinator_approval_status'] == 3) {
-                                        echo '<span class="badge bg-danger shadow-sm rounded-pill px-3 py-2"><i class="fas fa-times-circle me-1"></i>Rejected</span>';
-                                    } elseif ($call['reg_status'] == 2) {
-                                        echo '<span class="badge bg-info text-white shadow-sm rounded-pill px-3 py-2"><i class="fas fa-user-check me-1"></i>Reg. Done (Awaiting Coord)</span>';
-                                    } elseif ($call['reg_status'] == 1) {
-                                        echo '<span class="badge bg-primary shadow-sm rounded-pill px-3 py-2"><i class="fas fa-paper-plane me-1"></i>Sent to Supervisor</span>';
-                                    } elseif ($call['status'] == 0) {
-                                        echo '<span class="badge bg-secondary shadow-sm rounded-pill px-3 py-2"><i class="fas fa-check me-1"></i>Call Completed</span>';
+                                    if ($caller_type == 'UG_PG') {
+                                        if ($call['ugpg_status'] == 1) {
+                                            echo '<span class="badge bg-success shadow-sm rounded-pill px-3 py-2"><i class="fas fa-check-double me-1"></i>Admission Done</span>';
+                                        } elseif ($call['status'] == 0) {
+                                            echo '<span class="badge bg-secondary shadow-sm rounded-pill px-3 py-2"><i class="fas fa-check me-1"></i>Call Completed</span>';
+                                        } else {
+                                            echo '<span class="badge bg-light text-muted rounded-pill px-3 py-2">Unknown</span>';
+                                        }
                                     } else {
-                                        echo '<span class="badge bg-light text-muted rounded-pill px-3 py-2">Unknown</span>';
+                                        if ($call['coordinator_approval_status'] == 2) {
+                                            echo '<span class="badge bg-success shadow-sm rounded-pill px-3 py-2"><i class="fas fa-check-double me-1"></i>Admission Approved</span>';
+                                        } elseif ($call['coordinator_approval_status'] == 3) {
+                                            echo '<span class="badge bg-danger shadow-sm rounded-pill px-3 py-2"><i class="fas fa-times-circle me-1"></i>Rejected</span>';
+                                        } elseif ($call['reg_status'] == 2) {
+                                            echo '<span class="badge bg-info text-white shadow-sm rounded-pill px-3 py-2"><i class="fas fa-user-check me-1"></i>Reg. Done (Awaiting Coord)</span>';
+                                        } elseif ($call['reg_status'] == 1) {
+                                            echo '<span class="badge bg-primary shadow-sm rounded-pill px-3 py-2"><i class="fas fa-paper-plane me-1"></i>Sent to Supervisor</span>';
+                                        } elseif ($call['status'] == 0) {
+                                            echo '<span class="badge bg-secondary shadow-sm rounded-pill px-3 py-2"><i class="fas fa-check me-1"></i>Call Completed</span>';
+                                        } else {
+                                            echo '<span class="badge bg-light text-muted rounded-pill px-3 py-2">Unknown</span>';
+                                        }
                                     }
                                     ?>
                                 </td>
@@ -152,7 +165,8 @@ $completed_calls = mysqli_fetch_all($result, MYSQLI_ASSOC);
                                 </td>
                                 <td><?php echo date('d M Y', strtotime($call['date'])); ?></td>
                                 <td>
-                                    <a href="make-call.php?id=<?php echo $call['studentid']; ?>" class="btn btn-sm btn-outline-primary">
+                                    <?php $make_call_link = ($caller_type == 'UG_PG') ? 'make-call-ugpg.php' : 'make-call.php'; ?>
+                                    <a href="<?php echo $make_call_link; ?>?id=<?php echo $call['studentid']; ?>" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye"></i> View
                                     </a>
                                 </td>

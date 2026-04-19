@@ -11,17 +11,22 @@ if (!isset($_SESSION['caller_id'])) {
 $caller_id = $_SESSION['caller_id'];
 $caller_name = $_SESSION['caller_name'];
 
+$caller_type = $_SESSION['caller_type'] ?? 'KYP';
+
+$field_assigned_caller = ($caller_type == 'UG_PG') ? 'ugpg_assigned_caller' : 'assigned_caller';
+$mquery_type = ($caller_type == 'UG_PG') ? 'UG_PG' : 'KYP';
+
 $where_clause = "(
     EXISTS (SELECT 1 FROM caller_branches cb WHERE cb.caller_id = $caller_id AND cb.status = 1 AND cb.branch_id = r.bid AND (cb.category_id = 0 OR cb.category_id = r.mcategory))
-    OR r.assigned_caller = $caller_id
+    OR r.$field_assigned_caller = $caller_id
 ) AND r.status = 1";
 
 // 1. Total Assigned & Statistics (Optimized with a single pass or efficient subqueries)
 // Get latest query status for all relevant students in one go
 $latest_mq_subquery = "SELECT studentid, status, nextdate, des
                       FROM mquery 
-                      WHERE callerid = $caller_id 
-                      AND id IN (SELECT MAX(id) FROM mquery WHERE callerid = $caller_id GROUP BY studentid)";
+                      WHERE callerid = $caller_id AND query_type = '$mquery_type'
+                      AND id IN (SELECT MAX(id) FROM mquery WHERE callerid = $caller_id AND query_type = '$mquery_type' GROUP BY studentid)";
 
 // 1. Total Assigned Statistics (Absolute Total)
 $total_query = "SELECT COUNT(*) as total FROM registration r 
@@ -30,28 +35,45 @@ $result = mysqli_query($con, $total_query);
 $stats['total_assigned'] = mysqli_fetch_assoc($result)['total'];
 
 // Completed calls (Successfully closed students)
-$completed_query = "SELECT COUNT(DISTINCT r.id) as total FROM registration r 
-                    LEFT JOIN mquery m ON m.studentid = r.id
-                    WHERE (m.callerid = $caller_id AND m.status = 0) 
-                    OR (r.assigned_caller = $caller_id AND r.reg_status = 3)";
+if ($caller_type == 'UG_PG') {
+    $completed_query = "SELECT COUNT(DISTINCT r.id) as total FROM registration r 
+                        LEFT JOIN mquery m ON m.studentid = r.id AND m.query_type = 'UG_PG'
+                        WHERE (m.callerid = $caller_id AND (m.status = 0 OR m.status = 2)) 
+                        OR (r.ugpg_assigned_caller = $caller_id AND (r.ugpg_status = 1 OR r.ugpg_status = 2 OR r.ugpg_status = 3))";
+} else {
+    $completed_query = "SELECT COUNT(DISTINCT r.id) as total FROM registration r 
+                        LEFT JOIN mquery m ON m.studentid = r.id AND m.query_type = 'KYP'
+                        WHERE (m.callerid = $caller_id AND m.status = 0) 
+                        OR (r.assigned_caller = $caller_id AND r.reg_status = 3)";
+}
 $result_unique = mysqli_query($con, $completed_query);
 $stats['completed'] = mysqli_fetch_assoc($result_unique)['total'];
 
 // 3. Pending Action (Students needing a call right now)
 // Exclude students who have already been called today by this caller
-$handled_today_subquery = "SELECT studentid FROM mquery WHERE callerid = $caller_id AND DATE(date) = CURDATE()";
-$precise_pending_query = "SELECT COUNT(*) as total FROM registration r
-                         LEFT JOIN ($latest_mq_subquery) mq_latest ON r.id = mq_latest.studentid
-                         WHERE $where_clause
-                         AND (mq_latest.status IS NULL OR mq_latest.status = 1) 
-                         AND (r.reg_status = 0 AND r.coordinator_approval_status = 0)
-                         AND (mq_latest.nextdate IS NULL OR mq_latest.nextdate <= CURDATE())
-                         AND r.id NOT IN ($handled_today_subquery)";
+$handled_today_subquery = "SELECT studentid FROM mquery WHERE callerid = $caller_id AND query_type = '$mquery_type' AND DATE(date) = CURDATE()";
+if ($caller_type == 'UG_PG') {
+    $precise_pending_query = "SELECT COUNT(*) as total FROM registration r
+                             LEFT JOIN ($latest_mq_subquery) mq_latest ON r.id = mq_latest.studentid
+                             WHERE $where_clause
+                             AND (mq_latest.status IS NULL OR mq_latest.status = 1) 
+                             AND (r.ugpg_status = 0)
+                             AND (mq_latest.nextdate IS NULL OR mq_latest.nextdate <= CURDATE())
+                             AND r.id NOT IN ($handled_today_subquery)";
+} else {
+    $precise_pending_query = "SELECT COUNT(*) as total FROM registration r
+                             LEFT JOIN ($latest_mq_subquery) mq_latest ON r.id = mq_latest.studentid
+                             WHERE $where_clause
+                             AND (mq_latest.status IS NULL OR mq_latest.status = 1) 
+                             AND (r.reg_status = 0 AND r.coordinator_approval_status = 0)
+                             AND (mq_latest.nextdate IS NULL OR mq_latest.nextdate <= CURDATE())
+                             AND r.id NOT IN ($handled_today_subquery)";
+}
 $result = mysqli_query($con, $precise_pending_query);
 $stats['pending'] = mysqli_fetch_assoc($result)['total'];
 
 // Today's calls (Unique Students handled today)
-$result = mysqli_query($con, "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND DATE(date) = CURDATE()");
+$result = mysqli_query($con, $today_calls_count_query = "SELECT COUNT(DISTINCT studentid) as total FROM mquery WHERE callerid = $caller_id AND query_type = '$mquery_type' AND DATE(date) = CURDATE()");
 $stats['today'] = mysqli_fetch_assoc($result)['total'];
 
 // Total Earnings (from Coordinator Approvals)
@@ -60,10 +82,12 @@ $earnings_result = mysqli_query($con, $earnings_query);
 $stats['earnings'] = mysqli_fetch_assoc($earnings_result)['total_earnings'] ?? 0;
 
 // Get assigned data (The main loop)
+$remark_field = ($caller_type == 'UG_PG') ? 'ugpg_caller_remark' : 'caller_remark';
 $query = "SELECT r.*, r.id as student_id, r.regno as student_regno, r.name as student_name, 
                  r.father as student_father, r.mob as student_mob, r.email as student_email, 
                  r.address as student_address, r.village as student_village, r.dis as student_dis, 
                  r.state as student_state, r.pincode as student_pincode, 
+                 r.$remark_field as assigned_remark,
                  mc.name as category_name, b.bname, b.bcode,
                  mq_latest.nextdate, mq_latest.status as latest_status, mq_latest.des as latest_remarks
           FROM registration r 
@@ -79,7 +103,7 @@ $result = mysqli_query($con, $query);
 
 while ($row = mysqli_fetch_assoc($result)) {
     // Standardize array structure
-    $row['remarks'] = $row['latest_remarks'] ?: $row['caller_remark'];
+    $row['remarks'] = $row['latest_remarks'] ?: $row['assigned_remark'];
     $assigned_data[] = $row;
 }
 
@@ -93,7 +117,7 @@ $query = "SELECT q.*, b.bname, r.name as student_name
           FROM mquery q 
           LEFT JOIN branch b ON q.bid = b.id 
           LEFT JOIN registration r ON q.studentid = r.id
-          WHERE q.callerid = $caller_id 
+          WHERE q.callerid = $caller_id AND q.query_type = '$mquery_type'
           ORDER BY q.id DESC 
           LIMIT 5";
 $recent_calls = [];
@@ -360,7 +384,11 @@ $followup_count = count($todays_followups);
                     <i class="fas fa-headset text-white"></i>
                 </div>
                 <div>
-                    <div class="fw-bold lh-1">Caller <span class="text-white">Portal</span></div>
+                    <?php if ($caller_type == 'UG_PG'): ?>
+                        <div class="fw-bold lh-1">UG/PG <span class="text-white">Admission</span></div>
+                    <?php else: ?>
+                        <div class="fw-bold lh-1">Caller <span class="text-white">Portal</span></div>
+                    <?php endif; ?>
                     <div class="text-white-50 small mt-1" style="font-size: 0.7rem; letter-spacing: 0.05em; font-weight: 500;">
                         Welcome back, <span class="text-white fw-semibold"><?php echo $caller_name; ?></span>
                     </div>
@@ -482,7 +510,8 @@ $followup_count = count($todays_followups);
                                             <td><?php echo htmlspecialchars($data['remarks'] ?? 'No remarks'); ?></td>
                                             <td><?php echo htmlspecialchars($data['bname'] ?? 'N/A'); ?></td>
                                             <td>
-                                                <a href="make-call.php?id=<?php echo $data['id']; ?>&student_id=<?php echo $data['student_id']; ?>"
+                                                <?php $make_call_link = ($caller_type == 'UG_PG') ? 'make-call-ugpg.php' : 'make-call.php'; ?>
+                                                <a href="<?php echo $make_call_link; ?>?id=<?php echo $data['id']; ?>&student_id=<?php echo $data['student_id']; ?>"
                                                     class="btn btn-premium btn-sm">
                                                     <i class="fas fa-phone me-1"></i> Call Now
                                                 </a>
@@ -543,7 +572,8 @@ $followup_count = count($todays_followups);
                                         <td><?php echo htmlspecialchars($data['category_name'] ?? 'N/A'); ?></td>
                                         <td><?php echo htmlspecialchars($data['nextdate'] ?? 'Pending'); ?></td>
                                         <td>
-                                                <a href="make-call.php?id=<?php echo $data['id']; ?>&student_id=<?php echo $data['student_id']; ?>"
+                                                <?php $make_call_link = ($caller_type == 'UG_PG') ? 'make-call-ugpg.php' : 'make-call.php'; ?>
+                                                <a href="<?php echo $make_call_link; ?>?id=<?php echo $data['id']; ?>&student_id=<?php echo $data['student_id']; ?>"
                                                     class="btn btn-premium btn-sm">
                                                     <i class="fas fa-phone me-1"></i> Call Now
                                                 </a>

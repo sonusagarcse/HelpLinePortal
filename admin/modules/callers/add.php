@@ -3,6 +3,7 @@ require_once(dirname(dirname(__DIR__)) . '/config/config.php');
 require_once(dirname(dirname(__DIR__)) . '/config/auth.php');
 
 $page_title = 'Add Caller';
+$page_type = isset($_GET['type']) ? htmlspecialchars($_GET['type']) : 'KYP';
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -28,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $svid = mysqli_real_escape_string($con, $_POST['svid']);
     $bid = mysqli_real_escape_string($con, $_POST['bid']);
     $earning_per_admission = isset($_POST['earning_per_admission']) ? (float)$_POST['earning_per_admission'] : 0.00;
+    $caller_type = isset($_POST['caller_type']) ? mysqli_real_escape_string($con, $_POST['caller_type']) : 'KYP';
     $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
     $status = isset($_POST['status']) ? 1 : 0;
     $date = date('d-m-Y');
@@ -36,10 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $calling_assignments = isset($_POST['calling_assignments']) ? $_POST['calling_assignments'] : [];
 
     // Insert caller
-    $query = "INSERT INTO caller (svid, regno, name, father, mother, dob, age, doj, gender, email, mob, state, dis, pincode, category, marital_status, qualification, aadhar, othermob_no, pass, address, bid, earning_per_admission, status, date) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $query = "INSERT INTO caller (svid, regno, name, father, mother, dob, age, doj, gender, email, mob, state, dis, pincode, category, marital_status, qualification, aadhar, othermob_no, pass, address, bid, earning_per_admission, caller_type, status, date) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = mysqli_prepare($con, $query);
-    mysqli_stmt_bind_param($stmt, "isssssissssssssssssssidis", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bid, $earning_per_admission, $status, $date);
+    mysqli_stmt_bind_param($stmt, "isssssissssssssssssssidsis", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bid, $earning_per_admission, $caller_type, $status, $date);
 
     if (mysqli_stmt_execute($stmt)) {
         $caller_id = mysqli_insert_id($con);
@@ -96,7 +98,7 @@ $other_assignments = [];
 $other_query = "SELECT cb.branch_id, cb.category_id, c.name as caller_name 
                 FROM caller_branches cb 
                 JOIN caller c ON cb.caller_id = c.id 
-                WHERE cb.status = 1";
+                WHERE cb.status = 1 AND c.caller_type = '$page_type'";
 $other_result = mysqli_query($con, $other_query);
 while ($row = mysqli_fetch_assoc($other_result)) {
     $other_assignments[$row['branch_id']][$row['category_id']][] = $row['caller_name'];
@@ -430,9 +432,13 @@ include('../../includes/header.php');
                             <label class="form-label">Confirm Password *</label>
                             <input type="password" class="form-control" id="confirm_password" required>
                         </div>
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <label class="form-label">Earning Per Admission (₹)</label>
                             <input type="number" step="0.01" name="earning_per_admission" class="form-control" value="0.00" required>
+                        </div>
+                        <div class="col-md-6">
+                            <?php $page_type = isset($_GET['type']) ? htmlspecialchars($_GET['type']) : 'KYP'; ?>
+                            <input type="hidden" name="caller_type" value="<?php echo $page_type; ?>">
                         </div>
                         <div class="col-md-12">
                             <div class="form-check">

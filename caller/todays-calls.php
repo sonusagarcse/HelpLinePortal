@@ -11,18 +11,21 @@ if (!isset($_SESSION['caller_id'])) {
 $caller_id = $_SESSION['caller_id'];
 $caller_name = $_SESSION['caller_name'];
 
+$caller_type = $_SESSION['caller_type'] ?? 'KYP';
+$mquery_type = ($caller_type == 'UG_PG') ? 'UG_PG' : 'KYP';
+
 // Get all calls made by the caller today (showing only the latest interaction per unique mobile number to avoid duplicates)
 $query = "SELECT q.*, b.bname, r.name as student_name, r.mob as student_mob, 
                  r.regno as student_regno, r.address as student_address 
           FROM mquery q 
           LEFT JOIN branch b ON q.bid = b.id 
           LEFT JOIN registration r ON q.studentid = r.id
-          WHERE q.callerid = $caller_id 
+          WHERE q.callerid = $caller_id AND q.query_type = '$mquery_type'
           AND q.id IN (
               SELECT MAX(mq.id) 
               FROM mquery mq 
               JOIN registration reg ON mq.studentid = reg.id 
-              WHERE mq.callerid = $caller_id AND DATE(mq.date) = CURDATE() 
+              WHERE mq.callerid = $caller_id AND mq.query_type = '$mquery_type' AND DATE(mq.date) = CURDATE() 
               GROUP BY reg.mob
           )
           ORDER BY q.id DESC";
@@ -112,7 +115,8 @@ while ($row = mysqli_fetch_assoc($result)) {
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <a href="make-call.php?id=<?php echo $call['studentid']; ?>" class="btn btn-sm btn-outline-primary">
+                                            <?php $make_call_link = ($caller_type == 'UG_PG') ? 'make-call-ugpg.php' : 'make-call.php'; ?>
+                                            <a href="<?php echo $make_call_link; ?>?id=<?php echo $call['studentid']; ?>" class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-eye"></i> View
                                             </a>
                                         </td>

@@ -53,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $svid = mysqli_real_escape_string($con, $_POST['svid']);
     $bid = mysqli_real_escape_string($con, $_POST['bid']);
     $earning_per_admission = isset($_POST['earning_per_admission']) ? (float)$_POST['earning_per_admission'] : 0.00;
+    $caller_type = isset($_POST['caller_type']) ? mysqli_real_escape_string($con, $_POST['caller_type']) : 'KYP';
     $status = isset($_POST['status']) ? 1 : 0;
 
     // Get selected branches and categories for calling
@@ -61,13 +62,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Update password only if provided
     if (!empty($_POST['pass'])) {
         $pass = password_hash($_POST['pass'], PASSWORD_DEFAULT);
-        $update_query = "UPDATE caller SET svid=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, pass=?, address=?, bid=?, earning_per_admission=?, status=? WHERE id=?";
+        $update_query = "UPDATE caller SET svid=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, pass=?, address=?, bid=?, earning_per_admission=?, caller_type=?, status=? WHERE id=?";
         $update_stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($update_stmt, "isssssissssssssssssssidii", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bid, $earning_per_admission, $status, $id);
+        mysqli_stmt_bind_param($update_stmt, "isssssissssssssssssssidisi", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $pass, $address, $bid, $earning_per_admission, $caller_type, $status, $id);
     } else {
-        $update_query = "UPDATE caller SET svid=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, address=?, bid=?, earning_per_admission=?, status=? WHERE id=?";
+        $update_query = "UPDATE caller SET svid=?, regno=?, name=?, father=?, mother=?, dob=?, age=?, doj=?, gender=?, email=?, mob=?, state=?, dis=?, pincode=?, category=?, marital_status=?, qualification=?, aadhar=?, othermob_no=?, address=?, bid=?, earning_per_admission=?, caller_type=?, status=? WHERE id=?";
         $update_stmt = mysqli_prepare($con, $update_query);
-        mysqli_stmt_bind_param($update_stmt, "isssssisssssssssssssidii", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $address, $bid, $earning_per_admission, $status, $id);
+        mysqli_stmt_bind_param($update_stmt, "isssssisssssssssssssidisi", $svid, $regno, $name, $father, $mother, $dob, $age, $doj, $gender, $email, $mob, $state, $dis, $pincode, $category, $marital_status, $qualification, $aadhar, $othermob_no, $address, $bid, $earning_per_admission, $caller_type, $status, $id);
     }
 
     if (mysqli_stmt_execute($update_stmt)) {
@@ -129,7 +130,7 @@ $other_assignments = [];
 $other_query = "SELECT cb.branch_id, cb.category_id, c.name as caller_name 
                 FROM caller_branches cb 
                 JOIN caller c ON cb.caller_id = c.id 
-                WHERE cb.status = 1 AND cb.caller_id != $id";
+                WHERE cb.status = 1 AND cb.caller_id != $id AND c.caller_type = '{$caller['caller_type']}'";
 $other_result = mysqli_query($con, $other_query);
 while ($row = mysqli_fetch_assoc($other_result)) {
     $other_assignments[$row['branch_id']][$row['category_id']][] = $row['caller_name'];
@@ -480,9 +481,12 @@ include('../../includes/header.php');
                             <label class="form-label">Confirm New Password</label>
                             <input type="password" class="form-control" id="confirm_password">
                         </div>
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <label class="form-label">Earning Per Admission (₹)</label>
                             <input type="number" step="0.01" name="earning_per_admission" class="form-control" value="<?php echo htmlspecialchars($caller['earning_per_admission'] ?? '0.00'); ?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="hidden" name="caller_type" value="<?php echo htmlspecialchars($caller['caller_type'] ?? 'KYP'); ?>">
                         </div>
                         <div class="col-md-12">
                             <div class="form-check">

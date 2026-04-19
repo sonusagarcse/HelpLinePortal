@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['caller_email'] = $row['email'];
             $_SESSION['caller_bid'] = $row['bid'];
             $_SESSION['caller_svid'] = $row['svid'];
+            $_SESSION['caller_type'] = $row['caller_type'] ?? 'KYP';
             $_SESSION['last_activity'] = time();
 
             // Redirect to caller dashboard

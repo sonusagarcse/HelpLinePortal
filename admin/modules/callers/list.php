@@ -4,10 +4,21 @@ require_once(dirname(dirname(__DIR__)) . '/config/auth.php');
 
 $page_title = 'Callers';
 
+$caller_type_filter = $_GET['type'] ?? '';
+
+$where_clause = "";
+if ($caller_type_filter === 'UG_PG') {
+    $page_title = 'UG/PG Callers';
+    $where_clause = "WHERE c.caller_type = 'UG_PG'";
+} elseif ($caller_type_filter === 'KYP') {
+    $where_clause = "WHERE c.caller_type = 'KYP'";
+}
+
 // Get all callers
 $query = "SELECT c.*, s.name as supervisor_name, b.bname FROM caller c 
           LEFT JOIN supervisor s ON c.svid = s.id 
           LEFT JOIN branch b ON c.bid = b.id 
+          $where_clause
           ORDER BY c.id DESC";
 $result = mysqli_query($con, $query);
 $callers = [];
@@ -48,16 +59,16 @@ include('../../includes/header.php');
             <div class="page-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h1>Callers Management</h1>
+                        <h1><?php echo $page_title; ?> Management</h1>
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="../../index.php">Dashboard</a></li>
-                                <li class="breadcrumb-item active">Callers</li>
+                                <li class="breadcrumb-item active"><?php echo $page_title; ?></li>
                             </ol>
                         </nav>
                     </div>
                     <div>
-                        <a href="add.php" class="btn btn-primary">
+                        <a href="add.php<?php echo $caller_type_filter ? '?type='.$caller_type_filter : ''; ?>" class="btn btn-primary">
                             <i class="fas fa-plus me-2"></i>Add New Caller
                         </a>
                     </div>
